@@ -1,0 +1,49 @@
+{
+  "num_buildings": 3,
+  "lot_width": 75.0,
+  "lot_depth": 30.0,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_annex.stl",
+    "building_03_annex.stl"
+  ],
+  "placements": [
+    {
+      "x": 0.0,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": -27.5,
+      "y": 2.5,
+      "rotation": 0.0,
+      "width": 15.0,
+      "depth": 12.5,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "annex"
+    },
+    {
+      "x": 27.5,
+      "y": 2.5,
+      "rotation": 0.0,
+      "width": 15.0,
+      "depth": 12.5,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "annex"
+    }
+  ],
+  "style": "art_deco",
+  "printer_type": "fdm",
+  "generation_time_ms": 8,
+  "seed": 42,
+  "strategy": "hierarchical",
+  "preset": "fujiyama"
+}

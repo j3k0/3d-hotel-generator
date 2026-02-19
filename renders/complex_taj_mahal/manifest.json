@@ -1,0 +1,49 @@
+{
+  "num_buildings": 3,
+  "lot_width": 52.0,
+  "lot_depth": 45.0,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_pavilion.stl",
+    "building_03_pavilion.stl"
+  ],
+  "placements": [
+    {
+      "x": 0.0,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": 26.0,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    },
+    {
+      "x": 0.0,
+      "y": 22.5,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    }
+  ],
+  "style": "victorian",
+  "printer_type": "fdm",
+  "generation_time_ms": 17,
+  "seed": 42,
+  "strategy": "l_layout",
+  "preset": "taj_mahal"
+}

@@ -1,0 +1,71 @@
+{
+  "num_buildings": 5,
+  "lot_width": 71.34445530209871,
+  "lot_depth": 69.34445530209872,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_pavilion.stl",
+    "building_03_pavilion.stl",
+    "building_04_pavilion.stl",
+    "building_05_pavilion.stl"
+  ],
+  "placements": [
+    {
+      "x": 0.0,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": 27.172227651049354,
+      "y": 14.922132705466362,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    },
+    {
+      "x": -14.922132705466357,
+      "y": 27.17222765104936,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    },
+    {
+      "x": -27.17222765104936,
+      "y": -14.922132705466355,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    },
+    {
+      "x": 14.922132705466353,
+      "y": -27.17222765104936,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 2,
+      "floor_height": 5.0,
+      "role": "pavilion"
+    }
+  ],
+  "style": "tropical",
+  "printer_type": "fdm",
+  "generation_time_ms": 17,
+  "seed": 42,
+  "strategy": "cluster",
+  "preset": "waikiki"
+}
