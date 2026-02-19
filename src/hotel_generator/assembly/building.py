@@ -44,7 +44,7 @@ class HotelBuilder:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    def build(self, params: BuildingParams) -> BuildResult:
+    def build(self, params: BuildingParams, skip_base: bool = False) -> BuildResult:
         """Build a hotel from parameters.
 
         1. Resolve PrinterProfile
@@ -80,18 +80,19 @@ class HotelBuilder:
                 f"Style '{params.style_name}' produced an empty manifold"
             )
 
-        # 5. Add base/pedestal
-        overhang = 0.5  # base extends 0.5mm beyond building on each side
-        base = base_slab(
-            width=params.width + 2 * overhang,
-            depth=params.depth + 2 * overhang,
-            thickness=profile.base_thickness,
-            chamfer=profile.base_chamfer,
-        )
-        building = union_all([building, base])
+        # 5. Add base/pedestal (unless skip_base for complex builds)
+        if not skip_base:
+            overhang = max(0.5, profile.base_thickness * 0.5)
+            base = base_slab(
+                width=params.width + 2 * overhang,
+                depth=params.depth + 2 * overhang,
+                thickness=profile.base_thickness,
+                chamfer=profile.base_chamfer,
+            )
+            building = union_all([building, base])
 
-        if building.is_empty():
-            raise GeometryError("Building became empty after adding base")
+            if building.is_empty():
+                raise GeometryError("Building became empty after adding base")
 
         # 6. Get mesh data for triangle count
         mesh = building.to_mesh()

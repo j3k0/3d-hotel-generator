@@ -280,7 +280,7 @@ def generate_and_render(
     resolution: tuple[int, int] = (1024, 1024),
     supersample: int = 2,
 ) -> list[str]:
-    """Full pipeline: generate hotel, then render from multiple angles."""
+    """Full pipeline: generate single hotel, then render from multiple angles."""
     from hotel_generator.assembly.building import HotelBuilder
     from hotel_generator.config import BuildingParams
     from hotel_generator.settings import Settings
@@ -288,10 +288,6 @@ def generate_and_render(
     print(f"Generating {style_name} hotel (seed={seed}, printer={printer_type})...")
     params = BuildingParams(
         style_name=style_name,
-        width=8.0,
-        depth=6.0,
-        num_floors=4,
-        floor_height=0.8,
         printer_type=printer_type,
         seed=seed,
     )
@@ -313,25 +309,99 @@ def generate_and_render(
     return paths
 
 
+def generate_complex_and_render(
+    preset_name: str | None = None,
+    style_name: str = "modern",
+    num_buildings: int = 3,
+    seed: int = 42,
+    printer_type: str = "fdm",
+    output_dir: str = "renders",
+    resolution: tuple[int, int] = (1024, 1024),
+    supersample: int = 2,
+) -> list[str]:
+    """Full pipeline: generate hotel complex, then render combined from multiple angles."""
+    from hotel_generator.complex.builder import ComplexBuilder
+    from hotel_generator.config import ComplexParams
+    from hotel_generator.settings import Settings
+
+    label = preset_name or f"{style_name}_{num_buildings}bldg"
+    print(f"Generating complex '{label}' (seed={seed}, printer={printer_type})...")
+
+    if preset_name:
+        from hotel_generator.complex.presets import get_preset
+        preset = get_preset(preset_name)
+        params = ComplexParams(
+            style_name=preset.style_name,
+            num_buildings=preset.num_buildings,
+            preset=preset_name,
+            printer_type=printer_type,
+            seed=seed,
+        )
+    else:
+        params = ComplexParams(
+            style_name=style_name,
+            num_buildings=num_buildings,
+            printer_type=printer_type,
+            seed=seed,
+        )
+
+    builder = ComplexBuilder(Settings())
+    result = builder.build(params)
+
+    total_tris = sum(b.triangle_count for b in result.buildings)
+    print(f"  Buildings: {len(result.buildings)}")
+    print(f"  Total triangles: {total_tris}")
+    print(f"  Lot: {result.lot_width:.1f} x {result.lot_depth:.1f} mm")
+    print(f"  All watertight: {all(b.is_watertight for b in result.buildings)}")
+
+    print(f"Rendering complex '{label}'...")
+    paths = render_manifold_to_images(
+        result.combined,
+        output_dir=output_dir,
+        style_name=label,
+        resolution=resolution,
+        supersample=supersample,
+    )
+    return paths
+
+
 def main():
     parser = argparse.ArgumentParser(description="Render a hotel style to PNG images")
-    parser.add_argument("--style", required=True, help="Style name (e.g., modern, victorian)")
+    parser.add_argument("--style", default="modern", help="Style name (e.g., modern, victorian)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--printer", default="fdm", choices=["fdm", "resin"])
     parser.add_argument("--output", default="renders", help="Output directory")
     parser.add_argument("--resolution", type=int, default=1024, help="Image resolution (square)")
     parser.add_argument("--supersample", type=int, default=2, choices=[1, 2, 4],
                         help="Supersample factor for anti-aliasing (default: 2)")
+    parser.add_argument("--complex", action="store_true", help="Generate hotel complex instead of single building")
+    parser.add_argument("--preset", default=None, help="Named preset (e.g., royal, waikiki). Implies --complex")
+    parser.add_argument("--num-buildings", type=int, default=3, help="Number of buildings (complex mode)")
     args = parser.parse_args()
 
-    paths = generate_and_render(
-        style_name=args.style,
-        seed=args.seed,
-        printer_type=args.printer,
-        output_dir=args.output,
-        resolution=(args.resolution, args.resolution),
-        supersample=args.supersample,
-    )
+    if args.preset:
+        args.complex = True
+
+    if args.complex:
+        paths = generate_complex_and_render(
+            preset_name=args.preset,
+            style_name=args.style,
+            num_buildings=args.num_buildings,
+            seed=args.seed,
+            printer_type=args.printer,
+            output_dir=args.output,
+            resolution=(args.resolution, args.resolution),
+            supersample=args.supersample,
+        )
+    else:
+        paths = generate_and_render(
+            style_name=args.style,
+            seed=args.seed,
+            printer_type=args.printer,
+            output_dir=args.output,
+            resolution=(args.resolution, args.resolution),
+            supersample=args.supersample,
+        )
     print(f"\nGenerated {len(paths)} renders in {args.output}/")
 
 

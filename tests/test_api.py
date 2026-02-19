@@ -41,10 +41,10 @@ class TestGenerateEndpoint:
     def test_generate_returns_glb(self, client):
         r = client.post("/generate", json={
             "style_name": "modern",
-            "width": 8.0,
-            "depth": 6.0,
+            "width": 30.0,
+            "depth": 25.0,
             "num_floors": 4,
-            "floor_height": 0.8,
+            "floor_height": 5.0,
             "printer_type": "fdm",
         })
         assert r.status_code == 200
@@ -123,6 +123,89 @@ class TestPreviewPNGEndpoint:
             json={"style_name": "nonexistent"},
         )
         assert r.status_code == 400
+
+
+class TestPresetsEndpoint:
+    def test_list_presets(self, client):
+        r = client.get("/presets")
+        assert r.status_code == 200
+        data = r.json()
+        assert "presets" in data
+        assert len(data["presets"]) == 8
+
+    def test_preset_has_fields(self, client):
+        r = client.get("/presets")
+        presets = r.json()["presets"]
+        royal = next(p for p in presets if p["name"] == "royal")
+        assert royal["style_name"] == "classical"
+        assert royal["num_buildings"] == 4
+        assert "building_roles" in royal
+
+
+class TestComplexGenerateEndpoint:
+    def test_complex_generate_returns_glb(self, client):
+        r = client.post("/complex/generate", json={
+            "style_name": "modern",
+            "num_buildings": 2,
+        })
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "application/octet-stream"
+        assert len(r.content) > 0
+
+    def test_complex_generate_has_metadata(self, client):
+        r = client.post("/complex/generate", json={
+            "style_name": "modern",
+            "num_buildings": 2,
+        })
+        assert "X-Complex-Metadata" in r.headers
+        metadata = json.loads(r.headers["X-Complex-Metadata"])
+        assert metadata["num_buildings"] == 2
+        assert "lot_width" in metadata
+        assert "buildings" in metadata
+
+    def test_complex_generate_with_preset(self, client):
+        r = client.post("/complex/generate", json={
+            "style_name": "modern",
+            "preset": "fujiyama",
+            "num_buildings": 3,
+        })
+        assert r.status_code == 200
+        metadata = json.loads(r.headers["X-Complex-Metadata"])
+        assert metadata["num_buildings"] == 3
+
+    def test_complex_generate_invalid_style(self, client):
+        r = client.post("/complex/generate", json={
+            "style_name": "nonexistent",
+            "num_buildings": 2,
+        })
+        assert r.status_code == 400
+
+
+class TestComplexExportEndpoint:
+    def test_complex_export_returns_file_list(self, client):
+        r = client.post("/complex/export", json={
+            "style_name": "modern",
+            "num_buildings": 2,
+        })
+        assert r.status_code == 200
+        data = r.json()
+        assert "files" in data
+        assert "base_plate.stl" in data["files"]
+        assert "manifest.json" in data["files"]
+        assert data["num_buildings"] == 2
+        # Should have base_plate + 2 buildings + manifest = 4 files
+        assert len(data["files"]) == 4
+
+    def test_complex_export_creates_files(self, client):
+        import os
+        r = client.post("/complex/export", json={
+            "style_name": "modern",
+            "num_buildings": 2,
+        })
+        data = r.json()
+        output_dir = data["output_dir"]
+        for filename in data["files"]:
+            assert os.path.exists(os.path.join(output_dir, filename))
 
 
 class TestErrorHandlers:

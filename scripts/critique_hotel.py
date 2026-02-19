@@ -95,6 +95,53 @@ Respond in valid JSON only (no markdown code fences):
 Set "pass" to true only if overall_score >= {threshold}.
 """
 
+COMPLEX_CRITIQUE_PROMPT = """You are reviewing rendered images of a 3D model of a miniature hotel
+complex game piece (Hotel board game scale, up to 10cm tall). The complex uses the "{style_name}"
+architectural style and contains {num_buildings} buildings on a shared base plate.
+{preset_info}
+
+Evaluate the following and score each 1-5 (5 = excellent):
+
+1. **Style Coherence** (1-5): Do all buildings share a coherent architectural style?
+   Is there visual unity across the complex?
+
+2. **Layout Logic** (1-5): Does the building arrangement make sense as a hotel complex?
+   Is there a clear hierarchy (main building vs wings/annexes/pavilions)?
+
+3. **Hotel Recognition** (1-5): Does this read as a hotel complex? Multiple buildings,
+   commercial scale, clear entrances, repeated window patterns?
+
+4. **Building Variation** (1-5): Do the buildings vary appropriately in size and proportion
+   while maintaining style coherence? (Wings smaller than main, tower taller, etc.)
+
+5. **Printability** (1-5): Does the geometry look clean and solid? No floating parts,
+   reasonable wall thicknesses, no impossible overhangs?
+
+For each category scoring below 4, provide a SPECIFIC, ACTIONABLE suggestion.
+
+Respond in valid JSON only (no markdown code fences):
+{{{{
+  "scores": {{{{
+    "style_coherence": 0,
+    "layout_logic": 0,
+    "hotel_recognition": 0,
+    "building_variation": 0,
+    "printability": 0
+  }}}},
+  "overall_score": 0.0,
+  "improvements": [
+    {{{{
+      "category": "category_name",
+      "problem": "what is wrong",
+      "suggestion": "specific change to make"
+    }}}}
+  ],
+  "pass": false
+}}}}
+
+Set "pass" to true only if overall_score >= {threshold}.
+"""
+
 GRID_CRITIQUE_PROMPT = """These are 8 different architectural styles of miniature hotel game pieces,
 rendered from the same 3/4 front angle. They are arranged in a 2x4 grid:
 
@@ -336,14 +383,88 @@ def run_critique_loop(
     }
 
 
+def critique_complex_images(
+    image_paths: list[str],
+    style_name: str,
+    num_buildings: int,
+    preset_name: str | None = None,
+    threshold: float = 3.5,
+    model: str = "claude-sonnet-4-20250514",
+) -> dict:
+    """Send rendered complex images to a vision model for structured critique."""
+    try:
+        import anthropic
+    except ImportError:
+        print("ERROR: critique requires the anthropic package.")
+        sys.exit(1)
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("WARNING: ANTHROPIC_API_KEY not set. Returning placeholder scores.")
+        return {
+            "scores": {
+                "style_coherence": 3,
+                "layout_logic": 3,
+                "hotel_recognition": 3,
+                "building_variation": 3,
+                "printability": 3,
+            },
+            "overall_score": 3.0,
+            "improvements": [
+                {
+                    "category": "setup",
+                    "problem": "No API key available for vision model critique",
+                    "suggestion": "Set ANTHROPIC_API_KEY to enable automated visual feedback",
+                }
+            ],
+            "pass": False,
+        }
+
+    client = anthropic.Anthropic()
+
+    preset_info = f"Preset: {preset_name}" if preset_name else "Custom configuration (no preset)"
+
+    content = []
+    for path in image_paths:
+        with open(path, "rb") as f:
+            img_data = base64.standard_b64encode(f.read()).decode("utf-8")
+        content.append({
+            "type": "image",
+            "source": {"type": "base64", "media_type": "image/png", "data": img_data},
+        })
+
+    content.append({
+        "type": "text",
+        "text": COMPLEX_CRITIQUE_PROMPT.format(
+            style_name=style_name,
+            num_buildings=num_buildings,
+            preset_info=preset_info,
+            threshold=threshold,
+        ),
+    })
+
+    response = client.messages.create(
+        model=model,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": content}],
+    )
+
+    response_text = response.content[0].text
+    if response_text.startswith("```"):
+        lines = response_text.split("\n")
+        response_text = "\n".join(lines[1:-1])
+
+    return json.loads(response_text)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Vision model critique for hotel styles")
-    parser.add_argument("--style", required=True, help="Style name (e.g., modern, victorian)")
+    parser.add_argument("--style", default="modern", help="Style name (e.g., modern, victorian)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--printer", default="fdm", choices=["fdm", "resin"])
     parser.add_argument("--threshold", type=float, default=3.5, help="Minimum passing score")
     parser.add_argument("--output", default="renders", help="Output directory")
     parser.add_argument("--grid", help="Path to style grid image for distinctiveness critique")
+    parser.add_argument("--preset", default=None, help="Named preset (e.g., royal). Renders and critiques complex.")
     parser.add_argument("--model", default="claude-sonnet-4-20250514", help="Vision model to use")
     args = parser.parse_args()
 
@@ -351,6 +472,35 @@ def main():
         print(f"Critiquing style grid: {args.grid}")
         result = critique_grid(args.grid, model=args.model)
         print(json.dumps(result, indent=2))
+    elif args.preset:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from render_hotel import generate_complex_and_render
+
+        print(f"Rendering preset '{args.preset}'...")
+        image_paths = generate_complex_and_render(
+            preset_name=args.preset,
+            seed=args.seed,
+            printer_type=args.printer,
+            output_dir=args.output,
+        )
+
+        from hotel_generator.complex.presets import get_preset
+        preset = get_preset(args.preset)
+
+        print(f"\nSending to vision model for complex critique...")
+        result = critique_complex_images(
+            image_paths,
+            style_name=preset.style_name,
+            num_buildings=preset.num_buildings,
+            preset_name=args.preset,
+            threshold=args.threshold,
+            model=args.model,
+        )
+        print(json.dumps(result, indent=2))
+
+        result_path = Path(args.output) / f"{args.preset}_critique.json"
+        result_path.write_text(json.dumps(result, indent=2))
+        print(f"\nComplex critique saved to {result_path}")
     else:
         result = run_critique_loop(
             style_name=args.style,
@@ -359,7 +509,6 @@ def main():
             threshold=args.threshold,
             output_dir=args.output,
         )
-        # Save result
         result_path = Path(args.output) / f"{args.style}_critique.json"
         result_path.write_text(json.dumps(result, indent=2))
         print(f"\nCritique saved to {result_path}")

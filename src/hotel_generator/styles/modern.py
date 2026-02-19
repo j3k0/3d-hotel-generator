@@ -15,6 +15,7 @@ from hotel_generator.components.massing import rect_mass
 from hotel_generator.components.roof import flat_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
+from hotel_generator.components.scale import ScaleContext
 from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
 
 
@@ -33,6 +34,9 @@ class ModernStyle(HotelStyle):
     @property
     def description(self) -> str:
         return "Clean rectangular geometry with flat roof, horizontal window bands, and optional penthouse"
+
+    def preferred_layout_strategy(self) -> str:
+        return "campus"
 
     def style_params_schema(self) -> dict[str, Any]:
         return {
@@ -84,15 +88,16 @@ class ModernStyle(HotelStyle):
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
 
+        sc = ScaleContext(w, d, fh, num_floors, profile)
         total_h = num_floors * fh
 
         # Main building shell
         shell = rect_mass(w, d, total_h)
 
         # Window cutouts on front and back facades
-        win_w = 0.4
-        win_h = 0.5
-        windows_per_floor = max(2, int(w / 1.5))
+        win_w = sc.window_width
+        win_h = sc.window_height
+        windows_per_floor = sc.windows_per_floor(w)
 
         cutouts = []
 
@@ -125,7 +130,7 @@ class ModernStyle(HotelStyle):
             cutouts.append(translate(c, y=d / 2))
 
         # Side windows (fewer per floor)
-        side_wins = max(1, int(d / 2.0))
+        side_wins = sc.windows_per_floor(d)
         for side_y_sign in [-1, 1]:
             side_cuts = window_grid_cutouts(
                 wall_width=d,
@@ -138,14 +143,13 @@ class ModernStyle(HotelStyle):
                 window_height=win_h,
             )
             for c in side_cuts:
-                # Rotate side windows 90 degrees and position on left/right wall
                 from hotel_generator.geometry.transforms import rotate_z
                 rotated = rotate_z(c, 90)
                 cutouts.append(translate(rotated, x=side_y_sign * w / 2))
 
         # Door cutout on front facade
-        door_w = max(0.8, w * 0.12)
-        door_h = fh * 0.85
+        door_w = sc.door_width
+        door_h = sc.door_height
         door = door_cutout(door_w, door_h, wall_t)
         cutouts.append(translate(door, y=-d / 2))
 
@@ -153,7 +157,13 @@ class ModernStyle(HotelStyle):
         additions = []
 
         # Flat roof with parapet
-        roof = flat_roof(w + 0.2, d + 0.2, parapet_height=0.3, slab_thickness=0.2)
+        ovh = sc.roof_overhang
+        roof = flat_roof(
+            w + 2 * ovh, d + 2 * ovh,
+            parapet_height=sc.parapet_height,
+            slab_thickness=sc.roof_slab_thickness,
+            parapet_wall_thickness=sc.parapet_wall_thickness,
+        )
         roof = translate(roof, z=total_h - BOOLEAN_EMBED)
         additions.append(roof)
 
@@ -163,12 +173,17 @@ class ModernStyle(HotelStyle):
             ph_d = d * 0.6
             ph_h = fh * 0.8
             penthouse = box(ph_w, ph_d, ph_h)
-            penthouse = translate(penthouse, z=total_h + 0.2 - BOOLEAN_EMBED)
+            penthouse = translate(penthouse, z=total_h + sc.roof_slab_thickness - BOOLEAN_EMBED)
             additions.append(penthouse)
 
             # Penthouse roof
-            ph_roof = flat_roof(ph_w + 0.1, ph_d + 0.1, parapet_height=0.15, slab_thickness=0.15)
-            ph_roof = translate(ph_roof, z=total_h + 0.2 + ph_h - BOOLEAN_EMBED)
+            ph_roof = flat_roof(
+                ph_w + ovh, ph_d + ovh,
+                parapet_height=sc.parapet_height * 0.5,
+                slab_thickness=sc.roof_slab_thickness * 0.75,
+                parapet_wall_thickness=sc.parapet_wall_thickness,
+            )
+            ph_roof = translate(ph_roof, z=total_h + sc.roof_slab_thickness + ph_h - BOOLEAN_EMBED)
             additions.append(ph_roof)
 
         # Optional cantilever

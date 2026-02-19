@@ -14,6 +14,7 @@ from hotel_generator.components.massing import stepped_mass
 from hotel_generator.components.roof import flat_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
+from hotel_generator.components.scale import ScaleContext
 from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
 
 
@@ -31,6 +32,9 @@ class ArtDecoStyle(HotelStyle):
     def description(self) -> str:
         return "Stepped ziggurat profile with vertical fins and geometric crown"
 
+    def preferred_layout_strategy(self) -> str:
+        return "hierarchical"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width
@@ -39,25 +43,26 @@ class ArtDecoStyle(HotelStyle):
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
 
+        sc = ScaleContext(w, d, fh, num_floors, profile)
+
         # Stepped massing (3 tiers)
         num_tiers = 3
         tier_floors = max(1, num_floors // num_tiers)
         tier_h = tier_floors * fh
-        setback = 0.6
+        setback = sc.setback
 
         shell = stepped_mass(w, d, num_tiers, tier_h, setback)
 
-        # Windows on the base tier (largest)
+        # Windows on each tier
         cutouts = []
-        win_w = 0.35
-        win_h = 0.55
-        wins_per_floor = max(2, int(w / 1.5))
+        win_w = sc.window_width
+        win_h = sc.window_height
 
         for tier in range(num_tiers):
             tier_w = w - 2 * setback * tier
             tier_d = d - 2 * setback * tier
             tier_base_z = tier * tier_h
-            tier_wins = max(1, int(tier_w / 1.5))
+            tier_wins = sc.windows_per_floor(tier_w)
 
             # Front and back windows for this tier
             for y_sign in [-1, 1]:
@@ -76,8 +81,8 @@ class ArtDecoStyle(HotelStyle):
                     cutouts.append(translate(c, y=y_sign * tier_d / 2, z=tier_base_z))
 
         # Door
-        door_w = max(0.7, w * 0.1)
-        door_h = fh * 0.85
+        door_w = sc.door_width
+        door_h = sc.door_height
         door = door_cutout(door_w, door_h, wall_t)
         cutouts.append(translate(door, y=-d / 2))
 
@@ -86,13 +91,14 @@ class ArtDecoStyle(HotelStyle):
         total_h = num_tiers * tier_h
 
         # Vertical fins on the front facade (base tier)
-        fin_thickness = max(profile.min_feature_size, 0.3)
+        fin_t = sc.fin_thickness
+        fin_d = sc.fin_depth
         num_fins = 4
         fin_spacing = w / (num_fins + 1)
         for i in range(num_fins):
-            fin = box(fin_thickness, 0.15, total_h * 0.7)
+            fin = box(fin_t, fin_d, total_h * 0.7)
             x_pos = -w / 2 + fin_spacing * (i + 1)
-            fin = translate(fin, x=x_pos, y=-d / 2 - 0.15 / 2 + BOOLEAN_EMBED)
+            fin = translate(fin, x=x_pos, y=-d / 2 - fin_d / 2 + BOOLEAN_EMBED)
             additions.append(fin)
 
         # Geometric crown at top

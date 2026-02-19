@@ -14,6 +14,7 @@ from hotel_generator.components.massing import rect_mass
 from hotel_generator.components.roof import hipped_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.column import square_column
+from hotel_generator.components.scale import ScaleContext
 from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
 from hotel_generator.geometry.booleans import union_all
 
@@ -32,6 +33,9 @@ class TropicalStyle(HotelStyle):
     def description(self) -> str:
         return "Deep overhanging eaves with supports, raised on stilts, multi-tier roof"
 
+    def preferred_layout_strategy(self) -> str:
+        return "cluster"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width
@@ -39,6 +43,8 @@ class TropicalStyle(HotelStyle):
         num_floors = max(params.num_floors, 3)
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
+
+        sc = ScaleContext(w, d, fh, num_floors, profile)
 
         # Raised on stilts: ground level is open
         stilt_h = fh  # one floor of stilts
@@ -50,9 +56,9 @@ class TropicalStyle(HotelStyle):
         shell = translate(shell, z=stilt_h)
 
         cutouts = []
-        win_w = 0.45
-        win_h = 0.5
-        wins_per_floor = max(2, int(w / 1.8))
+        win_w = sc.window_width
+        win_h = sc.window_height
+        wins_per_floor = sc.windows_per_floor(w)
 
         for y_sign in [-1, 1]:
             cuts = window_grid_cutouts(
@@ -74,7 +80,7 @@ class TropicalStyle(HotelStyle):
         total_h = stilt_h + building_h
 
         # Stilts (columns at corners and midpoints)
-        col_w = max(profile.min_column_width, 0.5)
+        col_w = sc.column_width
         stilt_positions = [
             (-w / 2 + col_w, -d / 2 + col_w),
             (w / 2 - col_w, -d / 2 + col_w),
@@ -89,7 +95,7 @@ class TropicalStyle(HotelStyle):
             additions.append(col)
 
         # Main hipped roof with deep overhang
-        overhang = 1.0
+        overhang = sc.eave_overhang * 1.5
         roof_w = w + 2 * overhang
         roof_d = d + 2 * overhang
         roof_h = fh * 1.0
@@ -108,7 +114,7 @@ class TropicalStyle(HotelStyle):
         # Overhang support brackets (45-degree, under the eaves)
         from hotel_generator.geometry.primitives import extrude_polygon
         bracket_size = overhang * 0.7
-        bracket_thickness = max(profile.min_feature_size, 0.3)
+        bracket_thickness = sc.fin_thickness
         bracket_profile = [
             (0, 0),
             (bracket_size, 0),

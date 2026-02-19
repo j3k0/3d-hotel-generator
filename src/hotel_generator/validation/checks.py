@@ -30,14 +30,14 @@ def validate_manifold(solid: Manifold) -> dict:
     bbox = tmesh.bounds  # [[min_x, min_y, min_z], [max_x, max_y, max_z]]
     results["base_at_z0"] = bbox[0][2] >= -2.0  # allow for base slab
 
-    # 4. Reasonable size (fits within 25mm x 25mm x 30mm)
+    # 4. Reasonable size (fits within 120mm x 120mm x 120mm)
     size = bbox[1] - bbox[0]
     results["reasonable_size"] = (
-        size[0] <= 25 and size[1] <= 25 and size[2] <= 30
+        size[0] <= 120 and size[1] <= 120 and size[2] <= 120
     )
 
-    # 5. Not too small (exceeds 3mm in at least 2 dimensions)
-    large_dims = sum(1 for s in size if s >= 3)
+    # 5. Not too small (exceeds 5mm in at least 2 dimensions)
+    large_dims = sum(1 for s in size if s >= 5)
     results["not_too_small"] = large_dims >= 2
 
     # 6. Triangle count

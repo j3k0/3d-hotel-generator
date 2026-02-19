@@ -9,14 +9,16 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from hotel_generator.assembly.building import HotelBuilder
-from hotel_generator.config import BuildingParams, ErrorResponse
+from hotel_generator.complex.builder import ComplexBuilder
+from hotel_generator.complex.presets import list_presets
+from hotel_generator.config import BuildingParams, ComplexParams, ErrorResponse
 from hotel_generator.errors import (
     GeometryError,
     HotelGeneratorError,
     InvalidParamsError,
 )
 from hotel_generator.export.glb import export_glb_bytes
-from hotel_generator.export.stl import export_stl_bytes
+from hotel_generator.export.stl import export_stl_bytes, export_complex_to_directory
 from hotel_generator.settings import Settings
 from hotel_generator.styles.base import list_styles
 
@@ -77,6 +79,11 @@ async def general_error_handler(request: Request, exc: HotelGeneratorError):
 def get_builder() -> HotelBuilder:
     """Provide a HotelBuilder instance. Overridable in tests."""
     return HotelBuilder(settings)
+
+
+def get_complex_builder() -> ComplexBuilder:
+    """Provide a ComplexBuilder instance. Overridable in tests."""
+    return ComplexBuilder(settings)
 
 
 # API routes (sync def for CPU-bound work)
@@ -176,6 +183,72 @@ def preview_png(
     )
 
     return Response(content=png_bytes, media_type="image/png")
+
+
+@app.get("/presets")
+def get_presets():
+    """List all available hotel complex presets."""
+    return {"presets": [p.model_dump() for p in list_presets()]}
+
+
+@app.post("/complex/generate")
+def complex_generate(
+    params: ComplexParams,
+    builder: ComplexBuilder = Depends(get_complex_builder),
+):
+    """Generate a hotel complex and return combined GLB for 3D preview.
+
+    Returns binary GLB with X-Complex-Metadata header containing
+    building count, lot size, generation time, and per-building info.
+    """
+    result = builder.build(params)
+    glb_bytes = export_glb_bytes(result.combined)
+
+    metadata = {
+        "num_buildings": len(result.buildings),
+        "lot_width": result.lot_width,
+        "lot_depth": result.lot_depth,
+        "buildings": [
+            {
+                "triangle_count": b.triangle_count,
+                "is_watertight": b.is_watertight,
+                "role": result.placements[i].role,
+            }
+            for i, b in enumerate(result.buildings)
+        ],
+        **result.metadata,
+    }
+
+    return Response(
+        content=glb_bytes,
+        media_type="application/octet-stream",
+        headers={"X-Complex-Metadata": json.dumps(metadata)},
+    )
+
+
+@app.post("/complex/export")
+def complex_export(
+    params: ComplexParams,
+    builder: ComplexBuilder = Depends(get_complex_builder),
+):
+    """Generate a hotel complex and export STL files to output directory.
+
+    Returns JSON with file list and output path.
+    """
+    result = builder.build(params)
+
+    import tempfile
+    output_dir = tempfile.mkdtemp(prefix="hotel_complex_")
+    files = export_complex_to_directory(result, output_dir)
+
+    return {
+        "output_dir": output_dir,
+        "files": files,
+        "num_buildings": len(result.buildings),
+        "lot_width": result.lot_width,
+        "lot_depth": result.lot_depth,
+        "metadata": result.metadata,
+    }
 
 
 # Static files mount (MUST be after API routes)

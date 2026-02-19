@@ -19,10 +19,10 @@ def fdm_params():
 
         return BuildingParams(
             style_name="modern",
-            width=8.0,
-            depth=6.0,
+            width=30.0,
+            depth=25.0,
             num_floors=4,
-            floor_height=0.8,
+            floor_height=5.0,
             printer_type="fdm",
         )
     except ImportError:
@@ -37,10 +37,10 @@ def resin_params():
 
         return BuildingParams(
             style_name="modern",
-            width=8.0,
-            depth=6.0,
+            width=30.0,
+            depth=25.0,
             num_floors=4,
-            floor_height=0.8,
+            floor_height=5.0,
             printer_type="resin",
         )
     except ImportError:

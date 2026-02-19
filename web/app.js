@@ -99,7 +99,7 @@ class HotelPreview {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
         this.controls.minDistance = 10;
-        this.controls.maxDistance = 120;
+        this.controls.maxDistance = 300;
         this.controls.minPolarAngle = 0.1;
         this.controls.maxPolarAngle = Math.PI / 2 - 0.05;
         this.controls.update();
@@ -301,6 +301,7 @@ class App {
         this.preview = new HotelPreview(this.viewport);
         this.styleSelect = document.getElementById('style-select');
         this.printerSelect = document.getElementById('printer-select');
+        this.presetSelect = document.getElementById('preset-select');
         this.loadingOverlay = document.getElementById('loading-overlay');
         this.errorToast = document.getElementById('error-toast');
         this.buildInfo = document.getElementById('build-info');
@@ -315,6 +316,8 @@ class App {
         this.generationCounter = 0;
         this.lastParamsHash = '';
         this.styles = [];
+        this.presets = [];
+        this.mode = 'single'; // 'single' | 'complex'
 
         this.init();
     }
@@ -338,12 +341,19 @@ class App {
             this.showError('Failed to load styles: ' + e.message);
         }
 
+        // Load presets
+        await this.loadPresets();
+
+        // Mode tabs
+        this.initModeTabs();
+
         // Event listeners
         this.styleSelect.addEventListener('change', () => this.onStyleChange());
         this.printerSelect.addEventListener('change', () => this.debouncedGenerate());
+        this.presetSelect.addEventListener('change', () => this.onPresetChange());
 
         // Sliders
-        for (const id of ['seed', 'width', 'depth', 'floors', 'floor-height']) {
+        for (const id of ['seed', 'width', 'depth', 'floors', 'floor-height', 'buildings', 'spacing']) {
             const slider = document.getElementById(`${id}-slider`);
             const value = document.getElementById(`${id}-value`);
             if (slider && value) {
@@ -361,6 +371,62 @@ class App {
         document.getElementById('btn-download').addEventListener('click', () => {
             this.downloadSTL();
         });
+    }
+
+    initModeTabs() {
+        const tabs = document.querySelectorAll('.mode-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.mode = tab.dataset.mode;
+                this.updateModeVisibility();
+                this.lastParamsHash = ''; // force regenerate
+                this.debouncedGenerate();
+            });
+        });
+    }
+
+    updateModeVisibility() {
+        const complexEls = document.querySelectorAll('.complex-only');
+        complexEls.forEach(el => {
+            el.style.display = this.mode === 'complex' ? '' : 'none';
+        });
+    }
+
+    async loadPresets() {
+        try {
+            const res = await fetch('/presets');
+            const data = await res.json();
+            this.presets = data.presets;
+
+            for (const preset of this.presets) {
+                const opt = document.createElement('option');
+                opt.value = preset.name;
+                opt.textContent = `${preset.display_name} (${preset.style_name}, ${preset.num_buildings} bldgs)`;
+                this.presetSelect.appendChild(opt);
+            }
+        } catch (e) {
+            // Presets are optional
+        }
+    }
+
+    onPresetChange() {
+        const presetName = this.presetSelect.value;
+        if (!presetName) {
+            this.debouncedGenerate();
+            return;
+        }
+
+        const preset = this.presets.find(p => p.name === presetName);
+        if (preset) {
+            // Auto-fill style and building count from preset
+            this.styleSelect.value = preset.style_name;
+            this.onStyleChange();
+            document.getElementById('buildings-slider').value = preset.num_buildings;
+            document.getElementById('buildings-value').textContent = preset.num_buildings;
+        }
+        this.debouncedGenerate();
     }
 
     onStyleChange() {
@@ -384,14 +450,31 @@ class App {
         };
     }
 
+    getComplexParams() {
+        const presetName = this.presetSelect.value || undefined;
+        return {
+            style_name: this.styleSelect.value,
+            num_buildings: Number(document.getElementById('buildings-slider').value),
+            printer_type: this.printerSelect.value,
+            seed: Number(document.getElementById('seed-slider').value),
+            building_spacing: Number(document.getElementById('spacing-slider').value),
+            style_params: { ...this.paramUI.params },
+            preset: presetName,
+        };
+    }
+
     debouncedGenerate() {
         clearTimeout(this.debounceTimer);
         this.debounceTimer = setTimeout(() => this.generate(), 300);
     }
 
     async generate() {
-        const params = this.getParams();
-        const hash = JSON.stringify(params);
+        const isComplex = this.mode === 'complex';
+        const params = isComplex ? this.getComplexParams() : this.getParams();
+        const endpoint = isComplex ? '/complex/generate' : '/generate';
+        const metadataHeader = isComplex ? 'X-Complex-Metadata' : 'X-Build-Metadata';
+
+        const hash = JSON.stringify({ mode: this.mode, ...params });
         if (hash === this.lastParamsHash) return;
         this.lastParamsHash = hash;
 
@@ -407,7 +490,7 @@ class App {
         this.hideError();
 
         try {
-            const res = await fetch('/generate', {
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(params),
@@ -427,10 +510,10 @@ class App {
             await this.preview.loadGLB(buffer);
 
             // Update build info
-            const metadata = res.headers.get('X-Build-Metadata');
+            const metadata = res.headers.get(metadataHeader);
             if (metadata) {
                 const info = JSON.parse(metadata);
-                this.showBuildInfo(info);
+                this.showBuildInfo(info, isComplex);
             }
         } catch (e) {
             if (e.name === 'AbortError') return;
@@ -448,22 +531,37 @@ class App {
         btn.textContent = 'Generating...';
 
         try {
-            const params = this.getParams();
-            const res = await fetch('/export/stl', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(params),
-            });
+            if (this.mode === 'complex') {
+                const params = this.getComplexParams();
+                const res = await fetch('/complex/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params),
+                });
 
-            if (!res.ok) throw new Error('STL export failed');
+                if (!res.ok) throw new Error('Complex export failed');
 
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `hotel_${params.style_name}_${params.seed}.stl`;
-            a.click();
-            URL.revokeObjectURL(url);
+                const data = await res.json();
+                const fileCount = data.files.filter(f => f.endsWith('.stl')).length;
+                this.showError(`Exported ${fileCount} STL files to server directory`);
+            } else {
+                const params = this.getParams();
+                const res = await fetch('/export/stl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params),
+                });
+
+                if (!res.ok) throw new Error('STL export failed');
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hotel_${params.style_name}_${params.seed}.stl`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
         } catch (e) {
             this.showError('Download failed: ' + e.message);
         } finally {
@@ -486,17 +584,32 @@ class App {
         this.errorToast.style.display = 'none';
     }
 
-    showBuildInfo(info) {
+    showBuildInfo(info, isComplex = false) {
         this.buildInfo.style.display = 'block';
-        document.getElementById('info-triangles').textContent =
-            `Triangles: ${info.triangle_count.toLocaleString()}`;
-        if (info.bounding_box) {
-            const bb = info.bounding_box;
-            const w = (bb[3] - bb[0]).toFixed(1);
-            const d = (bb[4] - bb[1]).toFixed(1);
-            const h = (bb[5] - bb[2]).toFixed(1);
+        const infoBuildings = document.getElementById('info-buildings');
+
+        if (isComplex) {
+            const totalTris = info.buildings
+                ? info.buildings.reduce((sum, b) => sum + b.triangle_count, 0)
+                : 0;
+            document.getElementById('info-triangles').textContent =
+                `Triangles: ${totalTris.toLocaleString()}`;
             document.getElementById('info-size').textContent =
-                `Size: ${w} x ${d} x ${h} mm`;
+                `Lot: ${info.lot_width.toFixed(1)} x ${info.lot_depth.toFixed(1)} mm`;
+            infoBuildings.style.display = '';
+            infoBuildings.textContent = `Buildings: ${info.num_buildings}`;
+        } else {
+            document.getElementById('info-triangles').textContent =
+                `Triangles: ${info.triangle_count.toLocaleString()}`;
+            if (info.bounding_box) {
+                const bb = info.bounding_box;
+                const w = (bb[3] - bb[0]).toFixed(1);
+                const d = (bb[4] - bb[1]).toFixed(1);
+                const h = (bb[5] - bb[2]).toFixed(1);
+                document.getElementById('info-size').textContent =
+                    `Size: ${w} x ${d} x ${h} mm`;
+            }
+            infoBuildings.style.display = 'none';
         }
     }
 }

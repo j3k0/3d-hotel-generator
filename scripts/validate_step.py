@@ -74,8 +74,8 @@ STEP_GATES = {
         "checks": [
             ("BuildingParams validates",
              "from hotel_generator.config import BuildingParams; "
-             "p = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm')"),
+             "p = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm')"),
             ("style registry has modern",
              "from hotel_generator.styles.base import STYLE_REGISTRY; "
              "assert 'modern' in STYLE_REGISTRY"),
@@ -83,8 +83,8 @@ STEP_GATES = {
              "from hotel_generator.styles.base import STYLE_REGISTRY; "
              "from hotel_generator.config import BuildingParams, PrinterProfile; "
              "style = STYLE_REGISTRY['modern']; "
-             "params = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm'); "
+             "params = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm'); "
              "m = style.generate(params, PrinterProfile.fdm()); "
              "assert not m.is_empty(); assert m.volume() > 0"),
             ("assemble_building helper exists",
@@ -100,8 +100,8 @@ STEP_GATES = {
              "from hotel_generator.config import BuildingParams; "
              "from hotel_generator.settings import Settings; "
              "builder = HotelBuilder(Settings()); "
-             "params = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm'); "
+             "params = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm'); "
              "result = builder.build(params); "
              "assert isinstance(result, BuildResult); "
              "assert result.is_watertight; assert result.triangle_count > 0"),
@@ -172,8 +172,8 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='fdm')\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm')\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight, style + ' not watertight'\n"),
         ],
@@ -189,8 +189,8 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='fdm', seed=42)\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm', seed=42)\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight\n"
              "    assert result.triangle_count < 200000\n"),
@@ -201,11 +201,277 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='resin', seed=42)\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='resin', seed=42)\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight\n"
              "    assert result.triangle_count < 200000\n"),
+        ],
+    },
+    11: {
+        "description": "Scale-aware dimensions: ScaleContext + updated validation",
+        "tests": ["tests/"],
+        "checks": [
+            ("ScaleContext importable",
+             "from hotel_generator.components.scale import ScaleContext; "
+             "from hotel_generator.config import PrinterProfile; "
+             "sc = ScaleContext(30, 25, 5.0, 4, PrinterProfile.fdm()); "
+             "assert sc.window_width > 0; assert sc.door_width > 0"),
+            ("ScaleContext scales with floor_height",
+             "from hotel_generator.components.scale import ScaleContext; "
+             "from hotel_generator.config import PrinterProfile; "
+             "sc_small = ScaleContext(10, 8, 2.0, 4, PrinterProfile.fdm()); "
+             "sc_large = ScaleContext(30, 25, 5.0, 4, PrinterProfile.fdm()); "
+             "assert sc_large.window_width > sc_small.window_width"),
+            ("all styles use ScaleContext at new scale",
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
+             "for style in ['modern','art_deco','classical','victorian',"
+             "'mediterranean','tropical','skyscraper','townhouse']:\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm')\n"
+             "    result = builder.build(params)\n"
+             "    assert result.is_watertight, style + ' not watertight'\n"),
+            ("new defaults are hotel scale",
+             "from hotel_generator.config import BuildingParams, PrinterProfile; "
+             "p = BuildingParams(style_name='modern'); "
+             "assert p.width == 30.0; assert p.floor_height == 5.0; "
+             "prof = PrinterProfile.fdm(); "
+             "assert prof.base_thickness == 2.5"),
+        ],
+    },
+    12: {
+        "description": "ComplexParams config model",
+        "tests": ["tests/test_config.py"],
+        "checks": [
+            ("BuildingPlacement importable",
+             "from hotel_generator.config import BuildingPlacement; "
+             "p = BuildingPlacement(x=5.0, y=3.0, role='wing'); "
+             "assert p.role == 'wing'"),
+            ("ComplexParams validates",
+             "from hotel_generator.config import ComplexParams; "
+             "p = ComplexParams(style_name='modern', num_buildings=4); "
+             "assert p.num_buildings == 4; assert p.building_spacing == 5.0"),
+            ("ComplexParams rejects invalid",
+             "from hotel_generator.config import ComplexParams; "
+             "from hotel_generator.errors import InvalidParamsError; "
+             "from pydantic import ValidationError; "
+             "ok = False\n"
+             "try:\n"
+             "    ComplexParams(style_name='modern', num_buildings=7)\n"
+             "except (ValidationError, InvalidParamsError):\n"
+             "    ok = True\n"
+             "assert ok, 'Should reject num_buildings=7'"),
+            ("PresetInfo importable",
+             "from hotel_generator.config import PresetInfo; "
+             "p = PresetInfo(name='royal', display_name='Royal', "
+             "description='Grand', style_name='classical', "
+             "num_buildings=4, building_roles=['main','wing','wing','tower']); "
+             "assert len(p.building_roles) == 4"),
+        ],
+    },
+    13: {
+        "description": "Layout engine: 6 strategies + overlap detection",
+        "tests": ["tests/test_layout.py"],
+        "checks": [
+            ("6 strategies registered",
+             "from hotel_generator.layout.strategies import STRATEGIES; "
+             "assert len(STRATEGIES) == 6; "
+             "assert 'row' in STRATEGIES; assert 'courtyard' in STRATEGIES"),
+            ("LayoutEngine produces valid layout",
+             "from hotel_generator.layout.engine import LayoutEngine; "
+             "from hotel_generator.config import ComplexParams; "
+             "engine = LayoutEngine(); "
+             "params = ComplexParams(style_name='modern', num_buildings=4); "
+             "placements = engine.compute_layout(params, strategy='row'); "
+             "assert len(placements) == 4"),
+            ("all styles have preferred strategy",
+             "from hotel_generator.styles.base import STYLE_REGISTRY\n"
+             "from hotel_generator.layout.strategies import STRATEGIES\n"
+             "for name, style in STYLE_REGISTRY.items():\n"
+             "    s = style.preferred_layout_strategy()\n"
+             "    assert s in STRATEGIES, name + ' has invalid strategy ' + s\n"),
+        ],
+    },
+    14: {
+        "description": "ComplexBuilder: multi-building generation",
+        "tests": ["tests/test_complex.py", "tests/test_assembly.py"],
+        "checks": [
+            ("ComplexBuilder produces valid complex",
+             "from hotel_generator.complex.builder import ComplexBuilder, ComplexResult\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=3))\n"
+             "assert isinstance(result, ComplexResult)\n"
+             "assert len(result.buildings) == 3\n"
+             "assert not result.combined.is_empty()\n"),
+            ("skip_base works",
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
+             "r = builder.build(BuildingParams(style_name='modern'), skip_base=True)\n"
+             "assert r.is_watertight\n"),
+        ],
+    },
+    15: {
+        "description": "Named hotel presets: 8 curated configurations",
+        "tests": ["tests/test_presets.py"],
+        "checks": [
+            ("8 presets registered",
+             "from hotel_generator.complex.presets import PRESET_REGISTRY; "
+             "assert len(PRESET_REGISTRY) == 8"),
+            ("all presets reference valid styles",
+             "from hotel_generator.complex.presets import PRESET_REGISTRY\n"
+             "from hotel_generator.styles.base import STYLE_REGISTRY\n"
+             "for name, preset in PRESET_REGISTRY.items():\n"
+             "    assert preset.style_name in STYLE_REGISTRY, "
+             "name + ' references unknown style ' + preset.style_name\n"),
+            ("preset generates valid complex",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', preset='royal', "
+             "num_buildings=PRESET_REGISTRY['royal'].num_buildings))\n"
+             "assert len(result.buildings) == 4\n"
+             "assert not result.combined.is_empty()\n"),
+            ("list_presets and get_preset work",
+             "from hotel_generator.complex.presets import list_presets, get_preset\n"
+             "presets = list_presets()\n"
+             "assert len(presets) == 8\n"
+             "royal = get_preset('royal')\n"
+             "assert royal.style_name == 'classical'\n"),
+        ],
+    },
+    16: {
+        "description": "API endpoints: presets, complex generate, complex export",
+        "tests": ["tests/test_api.py"],
+        "checks": [
+            ("GET /presets returns 8 presets",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.get('/presets')\n"
+             "assert r.status_code == 200\n"
+             "assert len(r.json()['presets']) == 8\n"),
+            ("POST /complex/generate returns GLB",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.post('/complex/generate', json={'style_name': 'modern', 'num_buildings': 2})\n"
+             "assert r.status_code == 200\n"
+             "assert len(r.content) > 0\n"),
+            ("POST /complex/export returns file list",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.post('/complex/export', json={'style_name': 'modern', 'num_buildings': 2})\n"
+             "assert r.status_code == 200\n"
+             "data = r.json()\n"
+             "assert 'base_plate.stl' in data['files']\n"
+             "assert 'manifest.json' in data['files']\n"),
+            ("export_complex_to_directory works",
+             "import tempfile, os\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "from hotel_generator.export.stl import export_complex_to_directory\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=2))\n"
+             "d = tempfile.mkdtemp()\n"
+             "files = export_complex_to_directory(result, d)\n"
+             "assert 'base_plate.stl' in files\n"
+             "assert os.path.exists(os.path.join(d, 'base_plate.stl'))\n"),
+        ],
+    },
+    18: {
+        "description": "Render + critique scripts for complexes",
+        "tests": [],
+        "checks": [
+            ("render_hotel has complex support",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/render_hotel.py').read_text()\n"
+             "assert 'generate_complex_and_render' in src\n"
+             "assert '--preset' in src\n"
+             "assert '--complex' in src\n"),
+            ("render_style_grid has preset mode",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/render_style_grid.py').read_text()\n"
+             "assert 'render_preset_grid' in src\n"
+             "assert '--presets' in src\n"),
+            ("critique_hotel has complex support",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/critique_hotel.py').read_text()\n"
+             "assert 'critique_complex_images' in src\n"
+             "assert 'COMPLEX_CRITIQUE_PROMPT' in src\n"
+             "assert '--preset' in src\n"),
+            ("generate_complex_and_render importable",
+             "import sys; sys.path.insert(0, 'scripts')\n"
+             "from render_hotel import generate_complex_and_render\n"),
+        ],
+    },
+    19: {
+        "description": "Polish + integration testing: all presets, performance, end-to-end",
+        "tests": ["tests/"],
+        "checks": [
+            ("all 8 presets on FDM",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY, get_preset\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "for name in PRESET_REGISTRY:\n"
+             "    preset = get_preset(name)\n"
+             "    result = builder.build(ComplexParams(\n"
+             "        style_name=preset.style_name,\n"
+             "        num_buildings=preset.num_buildings,\n"
+             "        preset=name, printer_type='fdm', seed=42))\n"
+             "    assert len(result.buildings) == preset.num_buildings, name\n"
+             "    for b in result.buildings:\n"
+             "        assert b.is_watertight, name + ' building not watertight'\n"),
+            ("all 8 presets on resin",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY, get_preset\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "for name in PRESET_REGISTRY:\n"
+             "    preset = get_preset(name)\n"
+             "    result = builder.build(ComplexParams(\n"
+             "        style_name=preset.style_name,\n"
+             "        num_buildings=preset.num_buildings,\n"
+             "        preset=name, printer_type='resin', seed=42))\n"
+             "    assert len(result.buildings) == preset.num_buildings, name\n"),
+            ("6-building complex under 5s",
+             "import time\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "start = time.time()\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=6))\n"
+             "elapsed = time.time() - start\n"
+             "assert elapsed < 5.0, 'Took ' + str(round(elapsed, 2)) + 's'\n"
+             "assert len(result.buildings) == 6\n"),
+            ("end-to-end export pipeline",
+             "import tempfile, os, json\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "from hotel_generator.export.stl import export_complex_to_directory\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=3))\n"
+             "d = tempfile.mkdtemp()\n"
+             "files = export_complex_to_directory(result, d)\n"
+             "assert 'base_plate.stl' in files\n"
+             "assert 'manifest.json' in files\n"
+             "m = json.loads(open(os.path.join(d, 'manifest.json')).read())\n"
+             "assert m['num_buildings'] == 3\n"),
         ],
     },
 }
