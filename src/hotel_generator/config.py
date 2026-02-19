@@ -29,8 +29,8 @@ class PrinterProfile:
     max_aspect_ratio: float = 6.0
 
     # Base
-    base_thickness: float = 1.2
-    base_chamfer: float = 0.3
+    base_thickness: float = 2.5
+    base_chamfer: float = 0.5
 
     # Cylinders
     cylinder_segments_per_mm: int = 8
@@ -38,19 +38,29 @@ class PrinterProfile:
     max_cylinder_segments: int = 48
 
     # Feature gating
-    use_window_frames: bool = False
+    use_window_frames: bool = True
     use_individual_balusters: bool = False
     use_arched_windows: bool = False
-    use_dormers: bool = False
+    use_dormers: bool = True
 
     @classmethod
     def fdm(cls) -> PrinterProfile:
-        """FDM printer profile with conservative constraints."""
+        """FDM printer profile for hotel-scale pieces."""
         return cls()
 
     @classmethod
+    def monopoly_fdm(cls) -> PrinterProfile:
+        """Legacy FDM profile for Monopoly-scale pieces."""
+        return cls(
+            base_thickness=1.2,
+            base_chamfer=0.3,
+            use_window_frames=False,
+            use_dormers=False,
+        )
+
+    @classmethod
     def resin(cls) -> PrinterProfile:
-        """Resin printer profile with fine detail support."""
+        """Resin printer profile for hotel-scale pieces."""
         return cls(
             min_wall_thickness=0.5,
             min_feature_size=0.2,
@@ -64,8 +74,8 @@ class PrinterProfile:
             max_overhang_angle=55.0,
             max_bridge_span=999.0,
             max_aspect_ratio=10.0,
-            base_thickness=1.0,
-            base_chamfer=0.2,
+            base_thickness=2.0,
+            base_chamfer=0.3,
             cylinder_segments_per_mm=12,
             min_cylinder_segments=12,
             max_cylinder_segments=64,
@@ -91,13 +101,13 @@ class BuildingParams(BaseModel):
     """Parameters for generating a hotel building."""
 
     style_name: str
-    width: float = 8.0
-    depth: float = 6.0
+    width: float = 30.0
+    depth: float = 25.0
     num_floors: int = 4
-    floor_height: float = 0.8
+    floor_height: float = 5.0
     printer_type: str = "fdm"
     seed: int = 42
-    max_triangles: int = 50_000
+    max_triangles: int = 100_000
     style_params: dict[str, Any] = {}
 
     @model_validator(mode="after")
@@ -105,10 +115,10 @@ class BuildingParams(BaseModel):
         """Reject extreme aspect ratios."""
         total_height = self.num_floors * self.floor_height
         min_base = min(self.width, self.depth)
-        if min_base > 0 and total_height / min_base > 8:
+        if min_base > 0 and total_height / min_base > 15:
             from hotel_generator.errors import InvalidParamsError
             raise InvalidParamsError(
-                f"Aspect ratio {total_height / min_base:.1f}:1 exceeds maximum 8:1"
+                f"Aspect ratio {total_height / min_base:.1f}:1 exceeds maximum 15:1"
             )
         return self
 

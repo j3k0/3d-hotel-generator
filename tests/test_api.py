@@ -41,10 +41,10 @@ class TestGenerateEndpoint:
     def test_generate_returns_glb(self, client):
         r = client.post("/generate", json={
             "style_name": "modern",
-            "width": 8.0,
-            "depth": 6.0,
+            "width": 30.0,
+            "depth": 25.0,
             "num_floors": 4,
-            "floor_height": 0.8,
+            "floor_height": 5.0,
             "printer_type": "fdm",
         })
         assert r.status_code == 200

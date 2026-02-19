@@ -17,6 +17,7 @@ def flat_roof(
     depth: float,
     parapet_height: float = 0.5,
     slab_thickness: float = 0.3,
+    parapet_wall_thickness: float | None = None,
 ) -> Manifold:
     """Flat roof with optional parapet. Base at Z=0.
 
@@ -25,6 +26,7 @@ def flat_roof(
         depth: Roof depth (mm).
         parapet_height: Height of parapet walls above roof (mm). 0 = no parapet.
         slab_thickness: Roof slab thickness (mm).
+        parapet_wall_thickness: Parapet wall thickness (mm). None = auto from width.
     """
     slab = box(width, depth, slab_thickness)
 
@@ -32,7 +34,7 @@ def flat_roof(
         return slab
 
     # Parapet walls around the edge
-    pw = 0.3  # parapet wall thickness
+    pw = parapet_wall_thickness if parapet_wall_thickness is not None else max(0.3, width * 0.02)
     parts = [slab]
 
     # Front parapet

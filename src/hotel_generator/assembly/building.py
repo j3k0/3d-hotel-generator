@@ -81,7 +81,7 @@ class HotelBuilder:
             )
 
         # 5. Add base/pedestal
-        overhang = 0.5  # base extends 0.5mm beyond building on each side
+        overhang = max(0.5, profile.base_thickness * 0.5)
         base = base_slab(
             width=params.width + 2 * overhang,
             depth=params.depth + 2 * overhang,

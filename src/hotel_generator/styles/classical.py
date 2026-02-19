@@ -19,6 +19,7 @@ from hotel_generator.components.massing import rect_mass
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
 from hotel_generator.components.column import square_column, round_column
+from hotel_generator.components.scale import ScaleContext
 from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
 
 
@@ -45,13 +46,15 @@ class ClassicalStyle(HotelStyle):
         wall_t = profile.min_wall_thickness
         total_h = num_floors * fh
 
+        sc = ScaleContext(w, d, fh, num_floors, profile)
+
         shell = rect_mass(w, d, total_h)
 
         # Windows
         cutouts = []
-        win_w = 0.4
-        win_h = 0.5
-        wins_per_floor = max(2, int(w / 1.8))
+        win_w = sc.window_width
+        win_h = sc.window_height
+        wins_per_floor = sc.windows_per_floor(w)
 
         for y_sign in [-1, 1]:
             cuts = window_grid_cutouts(
@@ -68,30 +71,31 @@ class ClassicalStyle(HotelStyle):
                 cutouts.append(translate(c, y=y_sign * d / 2))
 
         # Grand entrance door
-        door_w = max(1.0, w * 0.15)
-        door_h = fh * 0.9
+        door_w = sc.door_width
+        door_h = sc.door_height
         door = door_cutout(door_w, door_h, wall_t)
         cutouts.append(translate(door, y=-d / 2))
 
         # Additions
         additions = []
 
-        # Column dimensions (defined early since pediment references them)
-        col_w = max(profile.min_column_width, 0.8)
+        # Column dimensions
+        col_w = sc.column_width
         num_cols = 4
         col_spacing = w / (num_cols + 1)
         col_h = total_h
         col_standoff = col_w * 0.8  # how far columns stand in front of wall
 
         # Entablature (horizontal band at top of columns)
-        entablature_h = 0.3
-        entablature = box(w + 0.4, d + 0.4, entablature_h)
+        ent_h = sc.entablature_height
+        ent_overshoot = sc.roof_overhang
+        entablature = box(w + 2 * ent_overshoot, d + 2 * ent_overshoot, ent_h)
         entablature = translate(entablature, z=total_h - BOOLEAN_EMBED)
         additions.append(entablature)
 
         # Triangular pediment on front facade — extends over portico
         pediment_h = fh * 1.0
-        half_w = (w + 0.6) / 2
+        half_w = (w + 2 * ent_overshoot) / 2
         pediment_profile = [(-half_w, 0), (half_w, 0), (0, pediment_h)]
         pediment_depth = col_w * 0.8 + col_standoff + BOOLEAN_EMBED * 2
         pediment = extrude_polygon(pediment_profile, pediment_depth)
@@ -99,7 +103,7 @@ class ClassicalStyle(HotelStyle):
         pediment = translate(
             pediment,
             y=-d / 2 - pediment_depth / 2 + BOOLEAN_EMBED,
-            z=total_h + entablature_h - BOOLEAN_EMBED,
+            z=total_h + ent_h - BOOLEAN_EMBED,
         )
         additions.append(pediment)
 
@@ -115,13 +119,15 @@ class ClassicalStyle(HotelStyle):
 
         # Portico floor (slab connecting columns to building)
         portico_d = col_standoff + col_w / 2 + BOOLEAN_EMBED
-        portico = box(w * 0.9, portico_d, 0.2)
+        portico_slab_h = sc.cornice_height
+        portico = box(w * 0.9, portico_d, portico_slab_h)
         portico = translate(portico, y=-d / 2 - portico_d / 2 + BOOLEAN_EMBED)
         additions.append(portico)
 
         # Cornice (small overhang at top)
-        cornice = box(w + 0.6, d + 0.6, 0.15)
-        cornice = translate(cornice, z=total_h + entablature_h - BOOLEAN_EMBED - 0.05)
+        cornice_h = sc.cornice_height
+        cornice = box(w + 2 * ent_overshoot, d + 2 * ent_overshoot, cornice_h)
+        cornice = translate(cornice, z=total_h + ent_h - BOOLEAN_EMBED - cornice_h * 0.3)
         additions.append(cornice)
 
         return assemble_building(shell, cutouts, additions)

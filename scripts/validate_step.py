@@ -74,8 +74,8 @@ STEP_GATES = {
         "checks": [
             ("BuildingParams validates",
              "from hotel_generator.config import BuildingParams; "
-             "p = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm')"),
+             "p = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm')"),
             ("style registry has modern",
              "from hotel_generator.styles.base import STYLE_REGISTRY; "
              "assert 'modern' in STYLE_REGISTRY"),
@@ -83,8 +83,8 @@ STEP_GATES = {
              "from hotel_generator.styles.base import STYLE_REGISTRY; "
              "from hotel_generator.config import BuildingParams, PrinterProfile; "
              "style = STYLE_REGISTRY['modern']; "
-             "params = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm'); "
+             "params = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm'); "
              "m = style.generate(params, PrinterProfile.fdm()); "
              "assert not m.is_empty(); assert m.volume() > 0"),
             ("assemble_building helper exists",
@@ -100,8 +100,8 @@ STEP_GATES = {
              "from hotel_generator.config import BuildingParams; "
              "from hotel_generator.settings import Settings; "
              "builder = HotelBuilder(Settings()); "
-             "params = BuildingParams(style_name='modern', width=8.0, depth=6.0, "
-             "num_floors=4, floor_height=0.8, printer_type='fdm'); "
+             "params = BuildingParams(style_name='modern', width=30.0, depth=25.0, "
+             "num_floors=4, floor_height=5.0, printer_type='fdm'); "
              "result = builder.build(params); "
              "assert isinstance(result, BuildResult); "
              "assert result.is_watertight; assert result.triangle_count > 0"),
@@ -172,8 +172,8 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='fdm')\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm')\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight, style + ' not watertight'\n"),
         ],
@@ -189,8 +189,8 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='fdm', seed=42)\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm', seed=42)\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight\n"
              "    assert result.triangle_count < 200000\n"),
@@ -201,11 +201,45 @@ STEP_GATES = {
              "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse']:\n"
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
-             "        num_floors=4, floor_height=0.8, printer_type='resin', seed=42)\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='resin', seed=42)\n"
              "    result = builder.build(params)\n"
              "    assert result.is_watertight\n"
              "    assert result.triangle_count < 200000\n"),
+        ],
+    },
+    11: {
+        "description": "Scale-aware dimensions: ScaleContext + updated validation",
+        "tests": ["tests/"],
+        "checks": [
+            ("ScaleContext importable",
+             "from hotel_generator.components.scale import ScaleContext; "
+             "from hotel_generator.config import PrinterProfile; "
+             "sc = ScaleContext(30, 25, 5.0, 4, PrinterProfile.fdm()); "
+             "assert sc.window_width > 0; assert sc.door_width > 0"),
+            ("ScaleContext scales with floor_height",
+             "from hotel_generator.components.scale import ScaleContext; "
+             "from hotel_generator.config import PrinterProfile; "
+             "sc_small = ScaleContext(10, 8, 2.0, 4, PrinterProfile.fdm()); "
+             "sc_large = ScaleContext(30, 25, 5.0, 4, PrinterProfile.fdm()); "
+             "assert sc_large.window_width > sc_small.window_width"),
+            ("all styles use ScaleContext at new scale",
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
+             "for style in ['modern','art_deco','classical','victorian',"
+             "'mediterranean','tropical','skyscraper','townhouse']:\n"
+             "    params = BuildingParams(style_name=style, width=30.0, depth=25.0,\n"
+             "        num_floors=4, floor_height=5.0, printer_type='fdm')\n"
+             "    result = builder.build(params)\n"
+             "    assert result.is_watertight, style + ' not watertight'\n"),
+            ("new defaults are hotel scale",
+             "from hotel_generator.config import BuildingParams, PrinterProfile; "
+             "p = BuildingParams(style_name='modern'); "
+             "assert p.width == 30.0; assert p.floor_height == 5.0; "
+             "prof = PrinterProfile.fdm(); "
+             "assert prof.base_thickness == 2.5"),
         ],
     },
 }

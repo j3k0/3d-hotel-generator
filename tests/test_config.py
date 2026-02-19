@@ -16,7 +16,7 @@ class TestPrinterProfile:
     def test_fdm_defaults(self):
         p = PrinterProfile.fdm()
         assert p.min_wall_thickness == 0.8
-        assert p.use_window_frames is False
+        assert p.use_window_frames is True
 
     def test_resin_profile(self):
         p = PrinterProfile.resin()
@@ -26,11 +26,11 @@ class TestPrinterProfile:
 
     def test_from_type_fdm(self):
         p = PrinterProfile.from_type("fdm")
-        assert p.base_thickness == 1.2
+        assert p.base_thickness == 2.5
 
     def test_from_type_resin(self):
         p = PrinterProfile.from_type("resin")
-        assert p.base_thickness == 1.0
+        assert p.base_thickness == 2.0
 
     def test_from_type_invalid(self):
         with pytest.raises(InvalidParamsError):
@@ -41,10 +41,10 @@ class TestBuildingParams:
     def test_valid_params(self):
         p = BuildingParams(
             style_name="modern",
-            width=8.0,
-            depth=6.0,
+            width=30.0,
+            depth=25.0,
             num_floors=4,
-            floor_height=0.8,
+            floor_height=5.0,
             printer_type="fdm",
         )
         assert p.style_name == "modern"
@@ -52,30 +52,30 @@ class TestBuildingParams:
 
     def test_defaults(self):
         p = BuildingParams(style_name="modern")
-        assert p.width == 8.0
+        assert p.width == 30.0
         assert p.num_floors == 4
         assert p.printer_type == "fdm"
 
     def test_aspect_ratio_rejected(self):
-        # 20 floors * 0.8 = 16mm height, min base dim = 1.5mm => ratio ~10.7:1
+        # 20 floors * 5.0 = 100mm height, min base dim = 5mm => ratio 20:1 > 15:1
         with pytest.raises((ValidationError, InvalidParamsError)):
             BuildingParams(
                 style_name="modern",
-                width=1.5,
-                depth=1.5,
+                width=5.0,
+                depth=5.0,
                 num_floors=20,
-                floor_height=0.8,
+                floor_height=5.0,
                 printer_type="fdm",
             )
 
     def test_valid_aspect_ratio(self):
-        # 4 floors * 0.8 = 3.2mm, base = 6mm => ratio 0.53:1
+        # 4 floors * 5.0 = 20mm, base = 25mm => ratio 0.8:1
         p = BuildingParams(
             style_name="modern",
-            width=8.0,
-            depth=6.0,
+            width=30.0,
+            depth=25.0,
             num_floors=4,
-            floor_height=0.8,
+            floor_height=5.0,
         )
         assert p.num_floors == 4
 

@@ -14,6 +14,7 @@ from hotel_generator.components.massing import rect_mass
 from hotel_generator.components.roof import mansard_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
+from hotel_generator.components.scale import ScaleContext
 from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
 
 
@@ -33,20 +34,21 @@ class TownhouseStyle(HotelStyle):
 
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
-        # Townhouse: narrower than default
-        w = min(params.width, 6.0)
+        w = params.width
         d = params.depth
         num_floors = max(params.num_floors, 3)
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
         total_h = num_floors * fh
 
+        sc = ScaleContext(w, d, fh, num_floors, profile)
+
         shell = rect_mass(w, d, total_h)
 
         cutouts = []
-        win_w = 0.4
-        win_h = 0.5
-        wins_per_floor = max(2, int(w / 2.0))
+        win_w = sc.window_width
+        win_h = sc.window_height
+        wins_per_floor = sc.windows_per_floor(w)
 
         # Front and back windows
         for y_sign in [-1, 1]:
@@ -64,8 +66,8 @@ class TownhouseStyle(HotelStyle):
                 cutouts.append(translate(c, y=y_sign * d / 2))
 
         # Door
-        door_w = max(0.7, w * 0.15)
-        door_h = fh * 0.85
+        door_w = sc.door_width
+        door_h = sc.door_height
         door = door_cutout(door_w, door_h, wall_t)
         cutouts.append(translate(door, x=-w / 4, y=-d / 2))
 
@@ -73,15 +75,16 @@ class TownhouseStyle(HotelStyle):
         additions = []
 
         # Mansard roof
-        roof = mansard_roof(w + 0.2, d + 0.2, fh * 0.6, fh * 0.4, inset=0.6)
+        ovh = sc.roof_overhang
+        roof = mansard_roof(w + 2 * ovh, d + 2 * ovh, fh * 0.6, fh * 0.4, inset=sc.mansard_inset)
         roof = translate(roof, z=total_h - BOOLEAN_EMBED)
         additions.append(roof)
 
         # Front stoop (2-3 steps)
         num_steps = 3
-        step_h = 0.3
-        step_d = 0.4
-        stoop_w = door_w + 1.0
+        step_h = sc.stoop_step_height
+        step_d = sc.stoop_step_depth
+        stoop_w = door_w + sc.column_width * 2
         for i in range(num_steps):
             step = box(stoop_w, step_d, step_h)
             step = translate(
@@ -94,7 +97,7 @@ class TownhouseStyle(HotelStyle):
 
         # Bay window (protruding box on front facade, upper floors)
         bay_w = w * 0.35
-        bay_d = 0.5
+        bay_d = sc.bay_depth
         bay_h = fh * (num_floors - 1)  # all but ground floor
         bay = box(bay_w, bay_d, bay_h)
         bay = translate(
@@ -106,8 +109,9 @@ class TownhouseStyle(HotelStyle):
         additions.append(bay)
 
         # Cornice with chamfer-like overhang at roofline
-        cornice = box(w + 0.3, d + 0.3, 0.15)
-        cornice = translate(cornice, z=total_h - 0.1)
+        cornice_h = sc.cornice_height
+        cornice = box(w + 2 * ovh, d + 2 * ovh, cornice_h)
+        cornice = translate(cornice, z=total_h - cornice_h * 0.5)
         additions.append(cornice)
 
         return assemble_building(shell, cutouts, additions)
