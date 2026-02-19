@@ -149,7 +149,7 @@ STEP_GATES = {
             ("style.css exists",
              "import pathlib; assert pathlib.Path('web/style.css').exists()"),
             ("index.html has import map",
-             "assert 'importmap' in pathlib.Path('web/index.html').read_text()"),
+             "import pathlib; assert 'importmap' in pathlib.Path('web/index.html').read_text()"),
             ("app.js has HotelPreview class",
              "import pathlib; assert 'HotelPreview' in pathlib.Path('web/app.js').read_text() "
              "or 'class Hotel' in pathlib.Path('web/app.js').read_text()"),
@@ -164,7 +164,7 @@ STEP_GATES = {
              "expected = {'modern','art_deco','classical','victorian',"
              "'mediterranean','tropical','skyscraper','townhouse'}; "
              "assert set(STYLE_REGISTRY.keys()) == expected, "
-             f"'Missing: {expected - set(STYLE_REGISTRY.keys())}'"),
+             "'Missing: ' + str(expected - set(STYLE_REGISTRY.keys()))"),
             ("all styles produce watertight geometry",
              "from hotel_generator.assembly.building import HotelBuilder; "
              "from hotel_generator.config import BuildingParams; "

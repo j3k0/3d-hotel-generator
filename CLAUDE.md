@@ -5,6 +5,26 @@ Procedural 3D hotel generator. Python backend with manifold3d CSG, FastAPI serve
 three.js web frontend. Generates 3D-printable Monopoly-scale hotel game pieces (~1-2cm
 tall) as STL files with a web preview UI.
 
+## First-Time Setup (Cloud Environment)
+Run this ONCE at the start of a new session before doing anything else:
+```bash
+bash scripts/setup_environment.sh
+```
+This installs Python deps, system-level OSMesa for headless rendering, and verifies
+the environment. If pyproject.toml doesn't exist yet (pre-Step 1), it installs
+core deps directly via pip.
+
+### Cloud Environment Notes
+- **apt-get may fail** (DNS issues). The setup script downloads .deb files directly
+  via Python urllib and installs with dpkg.
+- **pyrender version conflict**: Install `PyOpenGL>=3.1.0` first, then
+  `pip install pyrender --no-deps` to avoid the PyOpenGL==3.1.0 pin.
+- **No GPU**: CPU-only rendering via OSMesa. Set `PYOPENGL_PLATFORM=osmesa`.
+- **CDN access**: jsdelivr/unpkg may be blocked. three.js import map in web/index.html
+  will work in production but not testable in sandbox. This does NOT block development.
+- **ANTHROPIC_API_KEY**: If not set, critique scripts return placeholder scores with
+  a warning. Core development (steps 1-10) works without it.
+
 ## Key Commands
 ```bash
 # Install (editable, with dev + render extras)

@@ -151,8 +151,26 @@ def critique_images(
         sys.exit(1)
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ERROR: ANTHROPIC_API_KEY environment variable not set.")
-        sys.exit(1)
+        print("WARNING: ANTHROPIC_API_KEY not set. Returning placeholder scores.")
+        print("  Set ANTHROPIC_API_KEY to enable vision model critique.")
+        return {
+            "scores": {
+                "style_recognition": 3,
+                "silhouette_distinctiveness": 3,
+                "hotel_ness": 3,
+                "printability": 3,
+                "aesthetic_quality": 3,
+            },
+            "overall_score": 3.0,
+            "improvements": [
+                {
+                    "category": "setup",
+                    "problem": "No API key available for vision model critique",
+                    "suggestion": "Set ANTHROPIC_API_KEY to enable automated visual feedback",
+                }
+            ],
+            "pass": False,
+        }
 
     client = anthropic.Anthropic()
 
@@ -201,6 +219,16 @@ def critique_grid(
     except ImportError:
         print("ERROR: critique requires the anthropic package.")
         sys.exit(1)
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("WARNING: ANTHROPIC_API_KEY not set. Returning placeholder result.")
+        return {
+            "per_style_scores": {s: 3 for s in STYLE_MARKERS},
+            "confusable_pairs": [],
+            "unrecognizable": [],
+            "distinct_count": 0,
+            "overall_pass": False,
+        }
 
     client = anthropic.Anthropic()
 
