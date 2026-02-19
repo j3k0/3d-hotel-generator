@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hotel-generator"
+version = "0.1.0"
+description = "Procedural 3D hotel generator for 3D-printable Monopoly-scale game pieces"
+requires-python = ">=3.10"
+dependencies = [
+    "manifold3d>=3.3.2,<4.0",
+    "trimesh>=4.0,<5.0",
+    "numpy>=1.24,<3.0",
+    "fastapi>=0.100,<1.0",
+    "uvicorn>=0.20",
+    "pydantic>=2.0,<3.0",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "httpx>=0.24"]
+render = ["pyrender>=0.1.45", "PyOpenGL>=3.1.0", "Pillow>=10.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
