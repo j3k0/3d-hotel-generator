@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Hotel Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div class="app">
+        <!-- Top bar -->
+        <header class="top-bar">
+            <h1>3D Hotel Generator</h1>
+            <div class="top-bar-actions">
+                <button id="btn-reset-view" title="Reset camera view">Reset View</button>
+                <button id="btn-download" title="Download STL file">Download STL</button>
+            </div>
+        </header>
+
+        <!-- Workspace -->
+        <div class="workspace">
+            <!-- 3D Viewport -->
+            <div class="viewport" id="viewport">
+                <div class="loading-overlay" id="loading-overlay">
+                    <div class="spinner"></div>
+                    <p>Generating...</p>
+                </div>
+                <div class="error-toast" id="error-toast"></div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <label for="style-select">Architectural Style</label>
+                    <select id="style-select"></select>
+                </div>
+
+                <div class="sidebar-section">
+                    <label for="printer-select">Printer Type</label>
+                    <select id="printer-select">
+                        <option value="fdm">FDM (Filament)</option>
+                        <option value="resin">Resin (SLA/DLP)</option>
+                    </select>
+                </div>
+
+                <div class="sidebar-section">
+                    <label>Seed</label>
+                    <div class="slider-row">
+                        <input type="range" id="seed-slider" min="1" max="999" value="42">
+                        <span class="slider-value" id="seed-value">42</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <label>Width (mm)</label>
+                    <div class="slider-row">
+                        <input type="range" id="width-slider" min="4" max="12" step="0.5" value="8">
+                        <span class="slider-value" id="width-value">8.0</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <label>Depth (mm)</label>
+                    <div class="slider-row">
+                        <input type="range" id="depth-slider" min="3" max="10" step="0.5" value="6">
+                        <span class="slider-value" id="depth-value">6.0</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <label>Floors</label>
+                    <div class="slider-row">
+                        <input type="range" id="floors-slider" min="2" max="8" value="4">
+                        <span class="slider-value" id="floors-value">4</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <label>Floor Height (mm)</label>
+                    <div class="slider-row">
+                        <input type="range" id="floor-height-slider" min="0.5" max="1.2" step="0.1" value="0.8">
+                        <span class="slider-value" id="floor-height-value">0.8</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic style-specific params -->
+                <div id="style-params-container"></div>
+
+                <!-- Build info -->
+                <div class="sidebar-section build-info" id="build-info" style="display:none">
+                    <label>Build Info</label>
+                    <p id="info-triangles"></p>
+                    <p id="info-size"></p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
