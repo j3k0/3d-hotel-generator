@@ -53,6 +53,13 @@ Total install: ~30MB (vs ~200MB+ for OpenCascade-based alternatives).
 3d-hotel-generator/
 ├── pyproject.toml
 ├── README.md
+├── CLAUDE.md                      # Agent development instructions
+├── scripts/
+│   ├── validate_step.py           # Per-step quality gates
+│   ├── render_hotel.py            # Headless render single style
+│   ├── render_style_grid.py       # Render all 8 styles in grid
+│   └── critique_hotel.py          # Vision model critique loop
+├── renders/                       # Generated render output (gitignored)
 ├── src/
 │   └── hotel_generator/
 │       ├── __init__.py
@@ -549,3 +556,69 @@ COPLANAR_OFFSET = 0.01    # Minimum offset to avoid coplanar faces
 11. **Empty manifold guards** — Empty manifolds propagate silently through all operations. Each CSG phase checks for empty results and raises `GeometryError` if detected.
 
 12. **BuildResult dataclass** — `HotelBuilder.build()` returns `BuildResult` (manifold + metadata) not a raw `Manifold`. Metadata includes triangle count, bounding box, watertightness, warnings. API layer reads metadata for response headers.
+
+---
+
+## Autonomous Agent Workflow
+
+This project is designed to be developed by autonomous AI agents. The following
+infrastructure supports agent-driven development with minimal human intervention.
+
+### Agent Instructions
+- **`CLAUDE.md`** — Machine-actionable directives: commands, critical rules, troubleshooting,
+  file conventions, failure recovery protocols. The agent reads this before starting work.
+
+### Per-Step Quality Gates
+- **`scripts/validate_step.py`** — Binary pass/fail gate for each implementation step.
+  Run after completing each step: `python scripts/validate_step.py --step N`.
+  Contains pytest invocations + inline Python checks that verify the step's deliverables
+  are importable, functional, and correct. Agent must pass the gate before advancing.
+
+### Visual Feedback Loop (Render-Critique-Revise)
+After implementing each style, the agent runs a visual feedback loop:
+
+1. **Render**: `scripts/render_hotel.py` — Headless rendering via pyrender + OSMesa.
+   Generates 4-angle PNG renders (3/4 front, 3/4 back, front elevation, top-down).
+2. **Critique**: `scripts/critique_hotel.py` — Sends renders to a multimodal vision model
+   (Claude Sonnet) with a structured critique prompt. Returns JSON scores (1-5) for:
+   style recognition, silhouette distinctiveness, hotel-ness, printability, aesthetic quality.
+   Plus specific, actionable improvement suggestions for any score below 4.
+3. **Revise**: Agent reads improvement suggestions, modifies the style code, re-renders.
+   Max 3 iterations per style (diminishing returns beyond that).
+
+### Cross-Style Distinctiveness Check
+- **`scripts/render_style_grid.py`** — Renders all 8 styles in a 2×4 comparison grid
+  from the same angle. The grid is sent to a vision model to check that each style has
+  a unique, recognizable silhouette. Run after all 8 styles are implemented (post-Step 9).
+
+### Geometric Quality Oracles
+Beyond the 10-point watertightness checklist, `validation/quality.py` provides:
+- **Bounding box proportions** — Per-style expected proportions (skyscraper must be tall, townhouse narrow)
+- **Silhouette complexity** — Vertex count check to detect "just a box" geometry
+- **Window detection** — Surface area ratio vs plain box (windows increase surface area)
+- **Roof detection** — Height exceeds expected wall height (roof was actually added)
+- **Fill ratio checks** — Per-style: Art Deco < 0.85, Victorian < 0.80, Skyscraper < 0.75
+
+### Rendering Dependencies
+```toml
+# In pyproject.toml [project.optional-dependencies]
+dev = ["pytest>=7.0", "httpx>=0.24"]
+render = ["pyrender>=0.1.45", "PyOpenGL>=3.1.0", "Pillow>=10.0"]
+```
+
+```bash
+# System deps for headless rendering
+sudo apt-get install -y libosmesa6-dev
+export PYOPENGL_PLATFORM=osmesa
+```
+
+### Project Files for Autonomy
+```
+CLAUDE.md                          # Agent instructions (read first)
+scripts/
+  validate_step.py                 # Per-step quality gates
+  render_hotel.py                  # Headless render single style
+  render_style_grid.py             # Render all 8 styles in grid
+  critique_hotel.py                # Vision model critique loop
+renders/                           # Output directory for renders
+```
