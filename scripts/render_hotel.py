@@ -75,8 +75,8 @@ def _post_process(img):
     """Apply subtle post-processing to improve render quality."""
     from PIL import ImageEnhance
 
-    img = ImageEnhance.Contrast(img).enhance(1.08)
-    img = ImageEnhance.Brightness(img).enhance(1.02)
+    # Boost contrast to deepen shadows without clipping highlights
+    img = ImageEnhance.Contrast(img).enhance(1.10)
     return img
 
 
@@ -105,15 +105,15 @@ def _render_single_angle(
 
     # Build pyrender scene
     scene = pyrender.Scene(
-        bg_color=[0.82, 0.85, 0.88, 1.0],
-        ambient_light=[0.3, 0.3, 0.3],
+        bg_color=[0.62, 0.65, 0.70, 1.0],
+        ambient_light=[0.12, 0.12, 0.12],
     )
 
     # Material: warm matte plastic (like a 3D print)
     material = pyrender.MetallicRoughnessMaterial(
-        baseColorFactor=[0.83, 0.80, 0.75, 1.0],
+        baseColorFactor=[0.72, 0.68, 0.63, 1.0],
         metallicFactor=0.0,
-        roughnessFactor=0.65,
+        roughnessFactor=0.7,
     )
     render_mesh = pyrender.Mesh.from_trimesh(tri_mesh, material=material)
     scene.add(render_mesh)
@@ -122,9 +122,9 @@ def _render_single_angle(
     add_ground = elevation_deg < 70
     if add_ground:
         ground_material = pyrender.MetallicRoughnessMaterial(
-            baseColorFactor=[0.75, 0.78, 0.82, 1.0],
+            baseColorFactor=[0.52, 0.54, 0.58, 1.0],
             metallicFactor=0.0,
-            roughnessFactor=0.9,
+            roughnessFactor=0.95,
         )
         ground_mesh = _build_ground_plane(bounds, size)
         ground_render = pyrender.Mesh.from_trimesh(ground_mesh, material=ground_material)
@@ -157,16 +157,16 @@ def _render_single_angle(
     camera_pose[:3, 3] = cam_pos
     scene.add(camera, pose=camera_pose)
 
-    # Key light (from above-right, warm)
-    key_light = pyrender.DirectionalLight(color=[1.0, 0.98, 0.95], intensity=4.0)
+    # Key light (from above-right, warm) — primary form-defining light
+    key_light = pyrender.DirectionalLight(color=[1.0, 0.95, 0.9], intensity=2.2)
     scene.add(key_light, pose=_make_directional_light_pose([0.5, 0.3, -0.8]))
 
-    # Fill light (from left, cool)
-    fill_light = pyrender.DirectionalLight(color=[0.7, 0.75, 0.85], intensity=1.5)
+    # Fill light (from left, cool) — opens shadows without flattening
+    fill_light = pyrender.DirectionalLight(color=[0.65, 0.70, 0.80], intensity=0.7)
     scene.add(fill_light, pose=_make_directional_light_pose([-0.5, -0.3, -0.5]))
 
-    # Rim light (from behind-above, warm accent for silhouette)
-    rim_light = pyrender.DirectionalLight(color=[0.95, 0.90, 0.85], intensity=2.0)
+    # Rim light (from behind-above) — edge separation from background
+    rim_light = pyrender.DirectionalLight(color=[0.90, 0.85, 0.80], intensity=1.0)
     scene.add(rim_light, pose=_make_directional_light_pose([0.0, -0.5, -0.8]))
 
     # Render at supersampled resolution
