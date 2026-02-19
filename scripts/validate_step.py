@@ -415,6 +415,65 @@ STEP_GATES = {
              "from render_hotel import generate_complex_and_render\n"),
         ],
     },
+    19: {
+        "description": "Polish + integration testing: all presets, performance, end-to-end",
+        "tests": ["tests/"],
+        "checks": [
+            ("all 8 presets on FDM",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY, get_preset\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "for name in PRESET_REGISTRY:\n"
+             "    preset = get_preset(name)\n"
+             "    result = builder.build(ComplexParams(\n"
+             "        style_name=preset.style_name,\n"
+             "        num_buildings=preset.num_buildings,\n"
+             "        preset=name, printer_type='fdm', seed=42))\n"
+             "    assert len(result.buildings) == preset.num_buildings, name\n"
+             "    for b in result.buildings:\n"
+             "        assert b.is_watertight, name + ' building not watertight'\n"),
+            ("all 8 presets on resin",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY, get_preset\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "for name in PRESET_REGISTRY:\n"
+             "    preset = get_preset(name)\n"
+             "    result = builder.build(ComplexParams(\n"
+             "        style_name=preset.style_name,\n"
+             "        num_buildings=preset.num_buildings,\n"
+             "        preset=name, printer_type='resin', seed=42))\n"
+             "    assert len(result.buildings) == preset.num_buildings, name\n"),
+            ("6-building complex under 5s",
+             "import time\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "start = time.time()\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=6))\n"
+             "elapsed = time.time() - start\n"
+             "assert elapsed < 5.0, 'Took ' + str(round(elapsed, 2)) + 's'\n"
+             "assert len(result.buildings) == 6\n"),
+            ("end-to-end export pipeline",
+             "import tempfile, os, json\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "from hotel_generator.export.stl import export_complex_to_directory\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=3))\n"
+             "d = tempfile.mkdtemp()\n"
+             "files = export_complex_to_directory(result, d)\n"
+             "assert 'base_plate.stl' in files\n"
+             "assert 'manifest.json' in files\n"
+             "m = json.loads(open(os.path.join(d, 'manifest.json')).read())\n"
+             "assert m['num_buildings'] == 3\n"),
+        ],
+    },
 }
 
 

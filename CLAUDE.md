@@ -2,8 +2,9 @@
 
 ## Project Overview
 Procedural 3D hotel generator. Python backend with manifold3d CSG, FastAPI server,
-three.js web frontend. Generates 3D-printable Monopoly-scale hotel game pieces (~1-2cm
-tall) as STL files with a web preview UI.
+three.js web frontend. Generates 3D-printable hotel game pieces as STL files with a
+web preview UI. Supports both single buildings and multi-building hotel complexes
+(1-6 buildings on a shared base plate) for the "Hotel" board game (MB Games, 1986).
 
 ## First-Time Setup (Cloud Environment)
 Run this ONCE at the start of a new session before doing anything else:
@@ -55,6 +56,23 @@ python scripts/critique_hotel.py --style modern --seed 42
 for s in modern art_deco classical skyscraper townhouse mediterranean tropical victorian; do
   PYOPENGL_PLATFORM=osmesa python scripts/render_hotel.py --style $s --seed 42
 done
+
+# --- Hotel Complex Commands ---
+
+# Render a complex using a named preset
+PYOPENGL_PLATFORM=osmesa python scripts/render_hotel.py --preset royal --seed 42
+
+# Render a custom complex (no preset)
+PYOPENGL_PLATFORM=osmesa python scripts/render_hotel.py --complex --style modern --num-buildings 4
+
+# Render all 8 presets in a comparison grid
+PYOPENGL_PLATFORM=osmesa python scripts/render_style_grid.py --presets
+
+# Critique a preset complex
+python scripts/critique_hotel.py --preset royal --seed 42
+
+# Export complex to directory (via API)
+# POST /complex/export → writes base_plate.stl + building_NN_role.stl + manifest.json
 ```
 
 ## Implementation Order
@@ -101,24 +119,34 @@ Art Deco -> Classical -> Skyscraper -> Townhouse -> Mediterranean -> Tropical ->
 12. ALL randomness must flow through a single `random.Random(seed)` instance
     passed into style generators. Never use bare `random.random()` or `numpy.random`.
 
-## Target Dimensions at Print Scale
+## Target Dimensions (Hotel Board Game Scale)
 ```
-Total height:    10-20mm (including base and roof)
-Footprint:       5-10mm x 4-8mm
-Base slab:       extends 0.5mm beyond building on each side
-Floor height:    0.6-1.0mm per floor
-Window:          0.3-0.5mm wide, 0.4-0.7mm tall, 0.15-0.3mm deep recess
-Wall thickness:  0.8mm FDM / 0.5mm resin
-Column diameter: 0.8mm FDM / 0.4mm resin
+Single building:   width 30mm, depth 25mm, floor_height 5mm
+Complex footprint: 50-100mm x 40-80mm (1-6 buildings)
+Total height:      up to 100mm (including base and roof)
+Base plate:        shared across all buildings, 2.5mm thick
+Building spacing:  5mm default, min 2mm
+Wall thickness:    0.8mm FDM / 0.5mm resin
 ```
+
+Features scale proportionally via ScaleContext (components/scale.py).
+All dimensions derive from floor_height as the primary scale indicator.
 
 ## File Organization
 - `geometry/` — Pure geometry functions. No style knowledge.
-- `components/` — Reusable building parts. No style knowledge.
-- `styles/` — Combine components. Know about architecture.
-- `assembly/` — Orchestration only. No geometry construction.
+- `components/` — Reusable building parts. No style knowledge. Includes ScaleContext.
+- `styles/` — Combine components. Know about architecture. 8 styles registered.
+- `assembly/` — Single-building orchestration. HotelBuilder with skip_base option.
+- `complex/` — Multi-building orchestration. ComplexBuilder, presets, base plate.
+- `layout/` — Building placement strategies (row, courtyard, hierarchical, cluster, campus, l_layout).
 - `validation/` — Post-hoc checks on built geometry.
+- `export/` — STL and GLB export. Includes export_complex_to_directory().
 - `scripts/` — Agent utilities: validation gates, rendering, critique.
+
+## Named Presets (8 curated hotel configurations)
+royal (classical/4), fujiyama (art_deco/3), waikiki (tropical/5),
+president (modern/4), safari (mediterranean/3), taj_mahal (victorian/3),
+letoile (townhouse/4), boomerang (skyscraper/3)
 
 ## When Stuck
 
