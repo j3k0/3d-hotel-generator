@@ -81,17 +81,17 @@ class VictorianStyle(HotelStyle):
         # Additions
         additions = []
 
-        # Round turret at the L-junction
-        turret_r = max(profile.min_column_diameter, 0.8)
-        turret_h = total_h + fh * 0.5  # taller than main building
+        # Round turret at the L-junction — prominent feature
+        turret_r = max(profile.min_column_diameter, w * 0.15, 1.2)
+        turret_h = total_h + fh * 0.8  # taller than main building
         turret = cylinder(turret_r, turret_h)
         turret_x = w / 2 - wing_w / 2
         turret_y = d / 2 - wing_d * 0.1
         turret = translate(turret, x=turret_x, y=turret_y)
         additions.append(turret)
 
-        # Conical turret cap
-        cap_h = fh * 0.8
+        # Conical turret cap — tall and pointed
+        cap_h = fh * 1.2
         cap = cone(turret_r + 0.1, 0.0, cap_h)
         cap = translate(cap, x=turret_x, y=turret_y, z=turret_h - BOOLEAN_EMBED)
         additions.append(cap)

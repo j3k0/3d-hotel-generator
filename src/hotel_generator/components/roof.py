@@ -167,7 +167,9 @@ def barrel_roof(
     # Scale height: if height != radius, we scale Z
     cyl = cylinder(radius, depth, segments=segments)
     # Cylinder is along Z by default. Rotate to run along Y.
-    cyl = rotate_x(cyl, -90)
+    # rotate_x(90): Z -> -Y, Y -> Z. Cylinder Z=[0,depth] becomes Y=[-depth,0].
+    # Then translate(y=depth/2) centers it on Y.
+    cyl = rotate_x(cyl, 90)
     cyl = translate(cyl, y=depth / 2)
 
     # Cut to only keep top half

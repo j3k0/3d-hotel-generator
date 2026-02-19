@@ -76,17 +76,24 @@ class ClassicalStyle(HotelStyle):
         # Additions
         additions = []
 
+        # Column dimensions (defined early since pediment references them)
+        col_w = max(profile.min_column_width, 0.8)
+        num_cols = 4
+        col_spacing = w / (num_cols + 1)
+        col_h = total_h
+        col_standoff = col_w * 0.8  # how far columns stand in front of wall
+
         # Entablature (horizontal band at top of columns)
         entablature_h = 0.3
         entablature = box(w + 0.4, d + 0.4, entablature_h)
         entablature = translate(entablature, z=total_h - BOOLEAN_EMBED)
         additions.append(entablature)
 
-        # Triangular pediment on front facade
-        pediment_h = fh * 0.8
-        half_w = (w + 0.4) / 2
+        # Triangular pediment on front facade — extends over portico
+        pediment_h = fh * 1.0
+        half_w = (w + 0.6) / 2
         pediment_profile = [(-half_w, 0), (half_w, 0), (0, pediment_h)]
-        pediment_depth = 0.4
+        pediment_depth = col_w * 0.8 + col_standoff + BOOLEAN_EMBED * 2
         pediment = extrude_polygon(pediment_profile, pediment_depth)
         pediment = rotate_x(pediment, 90)
         pediment = translate(
@@ -96,20 +103,21 @@ class ClassicalStyle(HotelStyle):
         )
         additions.append(pediment)
 
-        # Columns on front facade
-        col_w = max(profile.min_column_width, 0.5)
-        num_cols = 4
-        col_spacing = w / (num_cols + 1)
-        col_h = total_h * 0.9
-
+        # Columns on front facade — prominent, standing proud of wall
         for i in range(num_cols):
             x_pos = -w / 2 + col_spacing * (i + 1)
             if profile.use_window_frames:
                 col = round_column(col_w / 2, col_h)
             else:
                 col = square_column(col_w, col_h)
-            col = translate(col, x=x_pos, y=-d / 2 - col_w / 2 + BOOLEAN_EMBED)
+            col = translate(col, x=x_pos, y=-d / 2 - col_standoff)
             additions.append(col)
+
+        # Portico floor (slab connecting columns to building)
+        portico_d = col_standoff + col_w / 2 + BOOLEAN_EMBED
+        portico = box(w * 0.9, portico_d, 0.2)
+        portico = translate(portico, y=-d / 2 - portico_d / 2 + BOOLEAN_EMBED)
+        additions.append(portico)
 
         # Cornice (small overhang at top)
         cornice = box(w + 0.6, d + 0.6, 0.15)
