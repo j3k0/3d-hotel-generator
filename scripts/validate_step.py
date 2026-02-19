@@ -295,6 +295,28 @@ STEP_GATES = {
              "    assert s in STRATEGIES, name + ' has invalid strategy ' + s\n"),
         ],
     },
+    14: {
+        "description": "ComplexBuilder: multi-building generation",
+        "tests": ["tests/test_complex.py", "tests/test_assembly.py"],
+        "checks": [
+            ("ComplexBuilder produces valid complex",
+             "from hotel_generator.complex.builder import ComplexBuilder, ComplexResult\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=3))\n"
+             "assert isinstance(result, ComplexResult)\n"
+             "assert len(result.buildings) == 3\n"
+             "assert not result.combined.is_empty()\n"),
+            ("skip_base works",
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
+             "r = builder.build(BuildingParams(style_name='modern'), skip_base=True)\n"
+             "assert r.is_watertight\n"),
+        ],
+    },
 }
 
 
