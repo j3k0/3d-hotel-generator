@@ -1,0 +1,161 @@
+"""Named hotel presets for the Hotel board game."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from hotel_generator.config import PresetInfo
+from hotel_generator.errors import InvalidParamsError
+
+
+@dataclass
+class HotelPreset:
+    """Curated hotel complex configuration."""
+
+    name: str
+    display_name: str
+    description: str
+    style_name: str
+    num_buildings: int
+    building_roles: list[str]
+    size_hints: dict[str, dict[str, float]] = field(default_factory=dict)
+
+    def to_preset_info(self) -> PresetInfo:
+        return PresetInfo(
+            name=self.name,
+            display_name=self.display_name,
+            description=self.description,
+            style_name=self.style_name,
+            num_buildings=self.num_buildings,
+            building_roles=self.building_roles,
+        )
+
+
+# Preset registry
+PRESET_REGISTRY: dict[str, HotelPreset] = {}
+
+
+def _register(preset: HotelPreset) -> HotelPreset:
+    PRESET_REGISTRY[preset.name] = preset
+    return preset
+
+
+_register(HotelPreset(
+    name="royal",
+    display_name="Royal",
+    description="Grand classical hotel with courtyard, wings, and clock tower",
+    style_name="classical",
+    num_buildings=4,
+    building_roles=["main", "wing", "wing", "tower"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+        "tower": {"width": 0.3, "depth": 0.3, "floors": 1.5},
+    },
+))
+
+_register(HotelPreset(
+    name="fujiyama",
+    display_name="Fujiyama",
+    description="Art Deco skyscraper complex with stepped towers",
+    style_name="art_deco",
+    num_buildings=3,
+    building_roles=["main", "annex", "annex"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "annex": {"width": 0.5, "depth": 0.5, "floors": 0.7},
+    },
+))
+
+_register(HotelPreset(
+    name="waikiki",
+    display_name="Waikiki",
+    description="Tropical resort with main lodge and scattered pavilions",
+    style_name="tropical",
+    num_buildings=5,
+    building_roles=["main", "pavilion", "pavilion", "pavilion", "pavilion"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "pavilion": {"width": 0.4, "depth": 0.4, "floors": 0.35},
+    },
+))
+
+_register(HotelPreset(
+    name="president",
+    display_name="President",
+    description="Modern campus-style hotel with main building and annexes",
+    style_name="modern",
+    num_buildings=4,
+    building_roles=["main", "annex", "annex", "annex"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "annex": {"width": 0.5, "depth": 0.5, "floors": 0.7},
+    },
+))
+
+_register(HotelPreset(
+    name="safari",
+    display_name="Safari",
+    description="Mediterranean lodge with L-shaped wings",
+    style_name="mediterranean",
+    num_buildings=3,
+    building_roles=["main", "wing", "wing"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+    },
+))
+
+_register(HotelPreset(
+    name="taj_mahal",
+    display_name="Taj Mahal",
+    description="Victorian palace with central tower and flanking pavilions",
+    style_name="victorian",
+    num_buildings=3,
+    building_roles=["main", "pavilion", "pavilion"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "pavilion": {"width": 0.4, "depth": 0.4, "floors": 0.35},
+    },
+))
+
+_register(HotelPreset(
+    name="letoile",
+    display_name="L'Etoile",
+    description="Row of elegant townhouses forming a unified hotel",
+    style_name="townhouse",
+    num_buildings=4,
+    building_roles=["main", "main", "main", "main"],
+    size_hints={
+        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+    },
+))
+
+_register(HotelPreset(
+    name="boomerang",
+    display_name="Boomerang",
+    description="Tall central skyscraper flanked by lower wings",
+    style_name="skyscraper",
+    num_buildings=3,
+    building_roles=["tower", "wing", "wing"],
+    size_hints={
+        "tower": {"width": 0.4, "depth": 0.4, "floors": 1.5},
+        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+    },
+))
+
+
+def list_presets() -> list[PresetInfo]:
+    """List all available presets."""
+    return [p.to_preset_info() for p in PRESET_REGISTRY.values()]
+
+
+def get_preset(name: str) -> HotelPreset:
+    """Get a preset by name."""
+    if name not in PRESET_REGISTRY:
+        available = sorted(PRESET_REGISTRY.keys())
+        raise InvalidParamsError(
+            f"Unknown preset '{name}'. Available: {', '.join(available)}"
+        )
+    return PRESET_REGISTRY[name]

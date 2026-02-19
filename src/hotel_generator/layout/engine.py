@@ -13,7 +13,12 @@ from hotel_generator.layout.strategies import STRATEGIES
 class LayoutEngine:
     """Compute building placements for a hotel complex."""
 
-    def compute_layout(self, params: ComplexParams, strategy: str | None = None) -> list[BuildingPlacement]:
+    def compute_layout(
+        self,
+        params: ComplexParams,
+        strategy: str | None = None,
+        roles: list[str] | None = None,
+    ) -> list[BuildingPlacement]:
         """Compute placements for a complex.
 
         If params.placements is provided, validates and returns them.
@@ -43,6 +48,7 @@ class LayoutEngine:
             base_floors=4,
             floor_height=5.0,
             spacing=params.building_spacing,
+            roles=roles,
         )
 
         # Validate no overlaps

@@ -317,6 +317,37 @@ STEP_GATES = {
              "assert r.is_watertight\n"),
         ],
     },
+    15: {
+        "description": "Named hotel presets: 8 curated configurations",
+        "tests": ["tests/test_presets.py"],
+        "checks": [
+            ("8 presets registered",
+             "from hotel_generator.complex.presets import PRESET_REGISTRY; "
+             "assert len(PRESET_REGISTRY) == 8"),
+            ("all presets reference valid styles",
+             "from hotel_generator.complex.presets import PRESET_REGISTRY\n"
+             "from hotel_generator.styles.base import STYLE_REGISTRY\n"
+             "for name, preset in PRESET_REGISTRY.items():\n"
+             "    assert preset.style_name in STYLE_REGISTRY, "
+             "name + ' references unknown style ' + preset.style_name\n"),
+            ("preset generates valid complex",
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.complex.presets import PRESET_REGISTRY\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', preset='royal', "
+             "num_buildings=PRESET_REGISTRY['royal'].num_buildings))\n"
+             "assert len(result.buildings) == 4\n"
+             "assert not result.combined.is_empty()\n"),
+            ("list_presets and get_preset work",
+             "from hotel_generator.complex.presets import list_presets, get_preset\n"
+             "presets = list_presets()\n"
+             "assert len(presets) == 8\n"
+             "royal = get_preset('royal')\n"
+             "assert royal.style_name == 'classical'\n"),
+        ],
+    },
 }
 
 

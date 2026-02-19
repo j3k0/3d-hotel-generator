@@ -53,6 +53,10 @@ class ComplexBuilder:
         """
         start_time = time.time()
 
+        # 0. Resolve preset if provided
+        if params.preset is not None:
+            params = self._resolve_preset(params)
+
         # 1. Resolve style
         if params.style_name not in STYLE_REGISTRY:
             available = sorted(STYLE_REGISTRY.keys())
@@ -65,7 +69,11 @@ class ComplexBuilder:
 
         # 2. Compute layout
         strategy = style.preferred_layout_strategy()
-        placements = self.layout_engine.compute_layout(params, strategy=strategy)
+        roles = None
+        if params.preset is not None:
+            from hotel_generator.complex.presets import get_preset
+            roles = get_preset(params.preset).building_roles
+        placements = self.layout_engine.compute_layout(params, strategy=strategy, roles=roles)
 
         # 3. Generate each building
         per_building_tris = params.max_triangles // max(1, params.num_buildings)
@@ -130,5 +138,24 @@ class ComplexBuilder:
                 "generation_time_ms": round(elapsed * 1000),
                 "seed": params.seed,
                 "strategy": strategy,
+                "preset": params.preset,
             },
+        )
+
+    def _resolve_preset(self, params: ComplexParams) -> ComplexParams:
+        """Apply preset configuration to ComplexParams."""
+        from hotel_generator.complex.presets import get_preset
+        preset = get_preset(params.preset)
+        return ComplexParams(
+            style_name=preset.style_name,
+            num_buildings=preset.num_buildings,
+            printer_type=params.printer_type,
+            seed=params.seed,
+            max_triangles=params.max_triangles,
+            style_params=params.style_params,
+            lot_width=params.lot_width,
+            lot_depth=params.lot_depth,
+            building_spacing=params.building_spacing,
+            placements=params.placements,
+            preset=params.preset,
         )
