@@ -348,6 +348,47 @@ STEP_GATES = {
              "assert royal.style_name == 'classical'\n"),
         ],
     },
+    16: {
+        "description": "API endpoints: presets, complex generate, complex export",
+        "tests": ["tests/test_api.py"],
+        "checks": [
+            ("GET /presets returns 8 presets",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.get('/presets')\n"
+             "assert r.status_code == 200\n"
+             "assert len(r.json()['presets']) == 8\n"),
+            ("POST /complex/generate returns GLB",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.post('/complex/generate', json={'style_name': 'modern', 'num_buildings': 2})\n"
+             "assert r.status_code == 200\n"
+             "assert len(r.content) > 0\n"),
+            ("POST /complex/export returns file list",
+             "from fastapi.testclient import TestClient\n"
+             "from hotel_generator.api import app\n"
+             "client = TestClient(app)\n"
+             "r = client.post('/complex/export', json={'style_name': 'modern', 'num_buildings': 2})\n"
+             "assert r.status_code == 200\n"
+             "data = r.json()\n"
+             "assert 'base_plate.stl' in data['files']\n"
+             "assert 'manifest.json' in data['files']\n"),
+            ("export_complex_to_directory works",
+             "import tempfile, os\n"
+             "from hotel_generator.complex.builder import ComplexBuilder\n"
+             "from hotel_generator.config import ComplexParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "from hotel_generator.export.stl import export_complex_to_directory\n"
+             "builder = ComplexBuilder(Settings())\n"
+             "result = builder.build(ComplexParams(style_name='modern', num_buildings=2))\n"
+             "d = tempfile.mkdtemp()\n"
+             "files = export_complex_to_directory(result, d)\n"
+             "assert 'base_plate.stl' in files\n"
+             "assert os.path.exists(os.path.join(d, 'base_plate.stl'))\n"),
+        ],
+    },
 }
 
 
