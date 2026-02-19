@@ -1,0 +1,60 @@
+{
+  "num_buildings": 4,
+  "lot_width": 140.0,
+  "lot_depth": 30.0,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_main.stl",
+    "building_03_main.stl",
+    "building_04_main.stl"
+  ],
+  "placements": [
+    {
+      "x": -52.5,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": -17.5,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": 17.5,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": 52.5,
+      "y": 0.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    }
+  ],
+  "style": "townhouse",
+  "printer_type": "fdm",
+  "generation_time_ms": 31,
+  "seed": 42,
+  "strategy": "row",
+  "preset": "letoile"
+}

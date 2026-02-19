@@ -1,0 +1,60 @@
+{
+  "num_buildings": 4,
+  "lot_width": 75.0,
+  "lot_depth": 45.0,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_wing.stl",
+    "building_03_wing.stl",
+    "building_04_tower.stl"
+  ],
+  "placements": [
+    {
+      "x": 0.0,
+      "y": 15.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": -26.25,
+      "y": 0.0,
+      "rotation": 90.0,
+      "width": 21.0,
+      "depth": 17.5,
+      "num_floors": 3,
+      "floor_height": 5.0,
+      "role": "wing"
+    },
+    {
+      "x": 26.25,
+      "y": 0.0,
+      "rotation": 90.0,
+      "width": 21.0,
+      "depth": 17.5,
+      "num_floors": 3,
+      "floor_height": 5.0,
+      "role": "wing"
+    },
+    {
+      "x": 0.0,
+      "y": -7.5,
+      "rotation": 0.0,
+      "width": 12.0,
+      "depth": 10.0,
+      "num_floors": 6,
+      "floor_height": 5.0,
+      "role": "tower"
+    }
+  ],
+  "style": "classical",
+  "printer_type": "fdm",
+  "generation_time_ms": 29,
+  "seed": 42,
+  "strategy": "courtyard",
+  "preset": "royal"
+}

@@ -1,0 +1,49 @@
+{
+  "num_buildings": 3,
+  "lot_width": 75.0,
+  "lot_depth": 43.0,
+  "files": [
+    "base_plate.stl",
+    "building_01_main.stl",
+    "building_02_wing.stl",
+    "building_03_wing.stl"
+  ],
+  "placements": [
+    {
+      "x": 0.0,
+      "y": 15.0,
+      "rotation": 0.0,
+      "width": 30.0,
+      "depth": 25.0,
+      "num_floors": 4,
+      "floor_height": 5.0,
+      "role": "main"
+    },
+    {
+      "x": -26.25,
+      "y": 0.0,
+      "rotation": 90.0,
+      "width": 21.0,
+      "depth": 17.5,
+      "num_floors": 3,
+      "floor_height": 5.0,
+      "role": "wing"
+    },
+    {
+      "x": 26.25,
+      "y": 0.0,
+      "rotation": 90.0,
+      "width": 21.0,
+      "depth": 17.5,
+      "num_floors": 3,
+      "floor_height": 5.0,
+      "role": "wing"
+    }
+  ],
+  "style": "mediterranean",
+  "printer_type": "fdm",
+  "generation_time_ms": 9,
+  "seed": 42,
+  "strategy": "courtyard",
+  "preset": "safari"
+}
