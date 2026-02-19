@@ -158,6 +158,44 @@ body {
     margin-bottom: 6px;
 }
 
+/* Mode tabs */
+.mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.mode-tab {
+    flex: 1;
+    padding: 8px 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.mode-tab:not(:last-child) {
+    border-right: 1px solid var(--border);
+}
+
+.mode-tab:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.mode-tab.active {
+    background: var(--accent);
+    color: white;
+}
+
 /* Form controls */
 select {
     width: 100%;
