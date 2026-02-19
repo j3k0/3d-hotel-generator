@@ -80,6 +80,51 @@ class TestExportSTLEndpoint:
         assert len(r.content) > 80  # STL header is 80 bytes
 
 
+class TestPreviewPNGEndpoint:
+    def _can_render(self):
+        """Check if headless rendering is available."""
+        try:
+            import os
+            os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
+            import pyrender
+            r = pyrender.OffscreenRenderer(32, 32)
+            r.delete()
+            return True
+        except Exception:
+            return False
+
+    def test_preview_png_returns_image(self, client):
+        if not self._can_render():
+            pytest.skip("pyrender/OSMesa not available")
+        r = client.post(
+            "/preview/png?angle=front_3q&resolution=128",
+            json={"style_name": "modern"},
+        )
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "image/png"
+        # PNG magic bytes
+        assert r.content[:4] == b"\x89PNG"
+        assert len(r.content) > 100
+
+    def test_preview_png_invalid_angle(self, client):
+        if not self._can_render():
+            pytest.skip("pyrender/OSMesa not available")
+        r = client.post(
+            "/preview/png?angle=nonexistent",
+            json={"style_name": "modern"},
+        )
+        assert r.status_code == 400
+
+    def test_preview_png_invalid_style(self, client):
+        if not self._can_render():
+            pytest.skip("pyrender/OSMesa not available")
+        r = client.post(
+            "/preview/png?angle=front_3q",
+            json={"style_name": "nonexistent"},
+        )
+        assert r.status_code == 400
+
+
 class TestErrorHandlers:
     def test_error_handlers_registered(self):
         assert len(app.exception_handlers) > 0

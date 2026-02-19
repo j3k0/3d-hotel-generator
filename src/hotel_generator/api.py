@@ -3,7 +3,7 @@
 import json
 import logging
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -129,6 +129,53 @@ def export_stl(params: BuildingParams, builder: HotelBuilder = Depends(get_build
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+PREVIEW_ANGLE_MAP = {
+    "front_3q": (45, 30, "front_3q"),
+    "back_3q": (135, 30, "back_3q"),
+    "front": (0, 0, "front"),
+    "top": (0, 80, "top"),
+}
+
+
+@app.post("/preview/png")
+def preview_png(
+    params: BuildingParams,
+    angle: str = Query(default="front_3q", description="Camera angle name"),
+    resolution: int = Query(default=512, ge=128, le=2048, description="Image resolution (square)"),
+    builder: HotelBuilder = Depends(get_builder),
+):
+    """Generate a hotel and return a PNG preview image."""
+    if angle not in PREVIEW_ANGLE_MAP:
+        raise InvalidParamsError(
+            f"Unknown angle: {angle!r}. Use one of: {list(PREVIEW_ANGLE_MAP.keys())}"
+        )
+
+    result = builder.build(params)
+
+    try:
+        from scripts.render_hotel import render_manifold_to_png_bytes
+    except ImportError:
+        # Fall back to direct import path when scripts/ is not a package
+        import importlib.util
+        import pathlib as _pl
+
+        spec = importlib.util.spec_from_file_location(
+            "render_hotel",
+            _pl.Path(__file__).parent.parent.parent / "scripts" / "render_hotel.py",
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        render_manifold_to_png_bytes = mod.render_manifold_to_png_bytes
+
+    png_bytes = render_manifold_to_png_bytes(
+        result.manifold,
+        resolution=(resolution, resolution),
+        angle=PREVIEW_ANGLE_MAP[angle],
+    )
+
+    return Response(content=png_bytes, media_type="image/png")
 
 
 # Static files mount (MUST be after API routes)
