@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 @dataclass
@@ -131,6 +131,94 @@ class BuildingParams(BaseModel):
                 f"printer_type must be 'fdm' or 'resin', got '{self.printer_type}'"
             )
         return self
+
+
+class BuildingPlacement(BaseModel):
+    """Position and size of a single building within a complex."""
+
+    x: float = 0.0
+    y: float = 0.0
+    rotation: float = 0.0
+    width: float = 30.0
+    depth: float = 25.0
+    num_floors: int = 4
+    floor_height: float = 5.0
+    role: str = "main"
+
+    @field_validator("role")
+    @classmethod
+    def check_role(cls, v: str) -> str:
+        valid = ("main", "wing", "annex", "tower", "pavilion")
+        if v not in valid:
+            from hotel_generator.errors import InvalidParamsError
+            raise InvalidParamsError(
+                f"role must be one of {valid}, got '{v}'"
+            )
+        return v
+
+
+class ComplexParams(BaseModel):
+    """Parameters for generating a hotel complex (1-6 buildings)."""
+
+    style_name: str
+    num_buildings: int = 3
+    printer_type: str = "fdm"
+    seed: int = 42
+    max_triangles: int = 200_000
+    style_params: dict[str, Any] = {}
+    lot_width: float | None = None
+    lot_depth: float | None = None
+    building_spacing: float = 5.0
+    placements: list[BuildingPlacement] | None = None
+    preset: str | None = None
+
+    @model_validator(mode="after")
+    def check_num_buildings(self):
+        if self.num_buildings < 1 or self.num_buildings > 6:
+            from hotel_generator.errors import InvalidParamsError
+            raise InvalidParamsError(
+                f"num_buildings must be 1-6, got {self.num_buildings}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_spacing(self):
+        if self.building_spacing < 2.0:
+            from hotel_generator.errors import InvalidParamsError
+            raise InvalidParamsError(
+                f"building_spacing must be >= 2.0mm, got {self.building_spacing}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_printer_type(self):
+        if self.printer_type not in ("fdm", "resin"):
+            from hotel_generator.errors import InvalidParamsError
+            raise InvalidParamsError(
+                f"printer_type must be 'fdm' or 'resin', got '{self.printer_type}'"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_placements_count(self):
+        if self.placements is not None and len(self.placements) != self.num_buildings:
+            from hotel_generator.errors import InvalidParamsError
+            raise InvalidParamsError(
+                f"placements has {len(self.placements)} entries but "
+                f"num_buildings is {self.num_buildings}"
+            )
+        return self
+
+
+class PresetInfo(BaseModel):
+    """Preset metadata for API response."""
+
+    name: str
+    display_name: str
+    description: str
+    style_name: str
+    num_buildings: int
+    building_roles: list[str]
 
 
 class StyleInfo(BaseModel):

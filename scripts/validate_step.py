@@ -242,6 +242,36 @@ STEP_GATES = {
              "assert prof.base_thickness == 2.5"),
         ],
     },
+    12: {
+        "description": "ComplexParams config model",
+        "tests": ["tests/test_config.py"],
+        "checks": [
+            ("BuildingPlacement importable",
+             "from hotel_generator.config import BuildingPlacement; "
+             "p = BuildingPlacement(x=5.0, y=3.0, role='wing'); "
+             "assert p.role == 'wing'"),
+            ("ComplexParams validates",
+             "from hotel_generator.config import ComplexParams; "
+             "p = ComplexParams(style_name='modern', num_buildings=4); "
+             "assert p.num_buildings == 4; assert p.building_spacing == 5.0"),
+            ("ComplexParams rejects invalid",
+             "from hotel_generator.config import ComplexParams; "
+             "from hotel_generator.errors import InvalidParamsError; "
+             "from pydantic import ValidationError; "
+             "ok = False\n"
+             "try:\n"
+             "    ComplexParams(style_name='modern', num_buildings=7)\n"
+             "except (ValidationError, InvalidParamsError):\n"
+             "    ok = True\n"
+             "assert ok, 'Should reject num_buildings=7'"),
+            ("PresetInfo importable",
+             "from hotel_generator.config import PresetInfo; "
+             "p = PresetInfo(name='royal', display_name='Royal', "
+             "description='Grand', style_name='classical', "
+             "num_buildings=4, building_roles=['main','wing','wing','tower']); "
+             "assert len(p.building_roles) == 4"),
+        ],
+    },
 }
 
 
