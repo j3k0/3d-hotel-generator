@@ -1,0 +1,128 @@
+"""Tropical style: deep overhangs, raised on stilts, multi-tier roof."""
+
+from __future__ import annotations
+
+import random
+from typing import Any
+
+from manifold3d import Manifold
+
+from hotel_generator.config import BuildingParams, PrinterProfile
+from hotel_generator.geometry.primitives import box, BOOLEAN_EMBED, BOOLEAN_OVERSHOOT
+from hotel_generator.geometry.transforms import translate
+from hotel_generator.components.massing import rect_mass
+from hotel_generator.components.roof import hipped_roof
+from hotel_generator.components.facade import window_grid_cutouts
+from hotel_generator.components.column import square_column
+from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
+from hotel_generator.geometry.booleans import union_all
+
+
+@register_style
+class TropicalStyle(HotelStyle):
+    @property
+    def name(self) -> str:
+        return "tropical"
+
+    @property
+    def display_name(self) -> str:
+        return "Tropical"
+
+    @property
+    def description(self) -> str:
+        return "Deep overhanging eaves with supports, raised on stilts, multi-tier roof"
+
+    def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
+        rng = random.Random(params.seed)
+        w = params.width
+        d = params.depth
+        num_floors = max(params.num_floors, 3)
+        fh = params.floor_height
+        wall_t = profile.min_wall_thickness
+
+        # Raised on stilts: ground level is open
+        stilt_h = fh  # one floor of stilts
+        building_floors = num_floors - 1
+        building_h = building_floors * fh
+
+        # Building body raised above stilts
+        shell = rect_mass(w, d, building_h)
+        shell = translate(shell, z=stilt_h)
+
+        cutouts = []
+        win_w = 0.45
+        win_h = 0.5
+        wins_per_floor = max(2, int(w / 1.8))
+
+        for y_sign in [-1, 1]:
+            cuts = window_grid_cutouts(
+                wall_width=w,
+                wall_height=building_h,
+                wall_thickness=wall_t,
+                num_floors=building_floors,
+                floor_height=fh,
+                windows_per_floor=wins_per_floor,
+                window_width=win_w,
+                window_height=win_h,
+                ground_floor_skip=False,
+            )
+            for c in cuts:
+                cutouts.append(translate(c, y=y_sign * d / 2, z=stilt_h))
+
+        # Additions
+        additions = []
+        total_h = stilt_h + building_h
+
+        # Stilts (columns at corners and midpoints)
+        col_w = max(profile.min_column_width, 0.5)
+        stilt_positions = [
+            (-w / 2 + col_w, -d / 2 + col_w),
+            (w / 2 - col_w, -d / 2 + col_w),
+            (-w / 2 + col_w, d / 2 - col_w),
+            (w / 2 - col_w, d / 2 - col_w),
+            (0, -d / 2 + col_w),
+            (0, d / 2 - col_w),
+        ]
+        for x, y in stilt_positions:
+            col = square_column(col_w, stilt_h + BOOLEAN_EMBED)
+            col = translate(col, x=x, y=y)
+            additions.append(col)
+
+        # Main hipped roof with deep overhang
+        overhang = 1.0
+        roof_w = w + 2 * overhang
+        roof_d = d + 2 * overhang
+        roof_h = fh * 1.0
+        roof = hipped_roof(roof_w, roof_d, roof_h)
+        roof = translate(roof, z=total_h - BOOLEAN_EMBED)
+        additions.append(roof)
+
+        # Second tier roof (smaller, on top)
+        tier2_w = w * 0.6 + 2 * overhang * 0.5
+        tier2_d = d * 0.6 + 2 * overhang * 0.5
+        tier2_h = fh * 0.6
+        tier2_roof = hipped_roof(tier2_w, tier2_d, tier2_h)
+        tier2_roof = translate(tier2_roof, z=total_h + roof_h * 0.5)
+        additions.append(tier2_roof)
+
+        # Overhang support brackets (45-degree, under the eaves)
+        from hotel_generator.geometry.primitives import extrude_polygon
+        bracket_size = overhang * 0.7
+        bracket_thickness = max(profile.min_feature_size, 0.3)
+        bracket_profile = [
+            (0, 0),
+            (bracket_size, 0),
+            (0, bracket_size),
+        ]
+        # Front brackets
+        for x_offset in [-w / 3, 0, w / 3]:
+            bracket = extrude_polygon(bracket_profile, bracket_thickness)
+            bracket = translate(
+                bracket,
+                x=x_offset - bracket_thickness / 2,
+                y=-d / 2 - bracket_size + BOOLEAN_EMBED,
+                z=total_h - bracket_size,
+            )
+            additions.append(bracket)
+
+        return assemble_building(shell, cutouts, additions)

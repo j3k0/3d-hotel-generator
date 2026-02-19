@@ -166,16 +166,16 @@ STEP_GATES = {
              "assert set(STYLE_REGISTRY.keys()) == expected, "
              "'Missing: ' + str(expected - set(STYLE_REGISTRY.keys()))"),
             ("all styles produce watertight geometry",
-             "from hotel_generator.assembly.building import HotelBuilder; "
-             "from hotel_generator.config import BuildingParams; "
-             "from hotel_generator.settings import Settings; "
-             "builder = HotelBuilder(Settings()); "
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
-             "'mediterranean','tropical','skyscraper','townhouse']: "
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0, "
-             "    num_floors=4, floor_height=0.8, printer_type='fdm'); "
-             "    result = builder.build(params); "
-             "    assert result.is_watertight, f'{style} not watertight'"),
+             "'mediterranean','tropical','skyscraper','townhouse']:\n"
+             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
+             "        num_floors=4, floor_height=0.8, printer_type='fdm')\n"
+             "    result = builder.build(params)\n"
+             "    assert result.is_watertight, style + ' not watertight'\n"),
         ],
     },
     10: {
@@ -183,27 +183,29 @@ STEP_GATES = {
         "tests": ["tests/"],
         "checks": [
             ("all styles on FDM",
-             "from hotel_generator.assembly.building import HotelBuilder; "
-             "from hotel_generator.config import BuildingParams; "
-             "from hotel_generator.settings import Settings; "
-             "builder = HotelBuilder(Settings()); "
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
-             "'mediterranean','tropical','skyscraper','townhouse']: "
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0, "
-             "    num_floors=4, floor_height=0.8, printer_type='fdm', seed=42); "
-             "    result = builder.build(params); "
-             "    assert result.is_watertight; assert result.triangle_count < 200000"),
+             "'mediterranean','tropical','skyscraper','townhouse']:\n"
+             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
+             "        num_floors=4, floor_height=0.8, printer_type='fdm', seed=42)\n"
+             "    result = builder.build(params)\n"
+             "    assert result.is_watertight\n"
+             "    assert result.triangle_count < 200000\n"),
             ("all styles on resin",
-             "from hotel_generator.assembly.building import HotelBuilder; "
-             "from hotel_generator.config import BuildingParams; "
-             "from hotel_generator.settings import Settings; "
-             "builder = HotelBuilder(Settings()); "
+             "from hotel_generator.assembly.building import HotelBuilder\n"
+             "from hotel_generator.config import BuildingParams\n"
+             "from hotel_generator.settings import Settings\n"
+             "builder = HotelBuilder(Settings())\n"
              "for style in ['modern','art_deco','classical','victorian',"
-             "'mediterranean','tropical','skyscraper','townhouse']: "
-             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0, "
-             "    num_floors=4, floor_height=0.8, printer_type='resin', seed=42); "
-             "    result = builder.build(params); "
-             "    assert result.is_watertight; assert result.triangle_count < 200000"),
+             "'mediterranean','tropical','skyscraper','townhouse']:\n"
+             "    params = BuildingParams(style_name=style, width=8.0, depth=6.0,\n"
+             "        num_floors=4, floor_height=0.8, printer_type='resin', seed=42)\n"
+             "    result = builder.build(params)\n"
+             "    assert result.is_watertight\n"
+             "    assert result.triangle_count < 200000\n"),
         ],
     },
 }
