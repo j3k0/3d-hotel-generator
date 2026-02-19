@@ -51,8 +51,10 @@ PYOPENGL_PLATFORM=osmesa python scripts/render_style_grid.py
 # Run vision model critique on a style (requires ANTHROPIC_API_KEY)
 python scripts/critique_hotel.py --style modern --seed 42
 
-# Generate reference renders for all styles (CI)
-PYOPENGL_PLATFORM=osmesa python scripts/generate_all_styles.py --output-dir renders/
+# Generate renders for all 8 styles
+for s in modern art_deco classical skyscraper townhouse mediterranean tropical victorian; do
+  PYOPENGL_PLATFORM=osmesa python scripts/render_hotel.py --style $s --seed 42
+done
 ```
 
 ## Implementation Order
@@ -190,3 +192,11 @@ pip install "manifold3d>=3.3.2,<4.0"
 - `batch_boolean` with empty list crashes — filter first
 - `Manifold.compose()` is O(1) but only for non-overlapping solids
 - Empty manifold propagates silently through all operations — always check
+- `bounding_box()` returns a 6-tuple `(min_x, min_y, min_z, max_x, max_y, max_z)`,
+  NOT an object with named attributes
+
+## Extrude-then-rotate Pattern (Axis Mapping)
+When extruding a 2D profile along Z and rotating to align depth along Y:
+- Use `rotate_x(solid, 90)` — maps Z→-Y, then `translate(y=depth/2)` to center.
+- **Do NOT use `rotate_x(solid, -90)`** — maps Z→+Y, causes Y-offset bugs.
+- This applies to `gabled_roof`, `barrel_roof`, pediments, and any extruded profile.
