@@ -389,6 +389,32 @@ STEP_GATES = {
              "assert os.path.exists(os.path.join(d, 'base_plate.stl'))\n"),
         ],
     },
+    18: {
+        "description": "Render + critique scripts for complexes",
+        "tests": [],
+        "checks": [
+            ("render_hotel has complex support",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/render_hotel.py').read_text()\n"
+             "assert 'generate_complex_and_render' in src\n"
+             "assert '--preset' in src\n"
+             "assert '--complex' in src\n"),
+            ("render_style_grid has preset mode",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/render_style_grid.py').read_text()\n"
+             "assert 'render_preset_grid' in src\n"
+             "assert '--presets' in src\n"),
+            ("critique_hotel has complex support",
+             "import pathlib\n"
+             "src = pathlib.Path('scripts/critique_hotel.py').read_text()\n"
+             "assert 'critique_complex_images' in src\n"
+             "assert 'COMPLEX_CRITIQUE_PROMPT' in src\n"
+             "assert '--preset' in src\n"),
+            ("generate_complex_and_render importable",
+             "import sys; sys.path.insert(0, 'scripts')\n"
+             "from render_hotel import generate_complex_and_render\n"),
+        ],
+    },
 }
 
 
