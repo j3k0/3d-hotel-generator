@@ -39,6 +39,9 @@ class VictorianStyle(HotelStyle):
     def description(self) -> str:
         return "Asymmetric L-plan with round turret, bay windows, and complex gabled roofline"
 
+    def preferred_layout_strategy(self) -> str:
+        return "l_layout"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

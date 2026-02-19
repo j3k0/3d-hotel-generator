@@ -32,6 +32,9 @@ class MediterraneanStyle(HotelStyle):
     def description(self) -> str:
         return "Barrel or hip roof with deep eaves, thick walls, and arched windows"
 
+    def preferred_layout_strategy(self) -> str:
+        return "courtyard"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

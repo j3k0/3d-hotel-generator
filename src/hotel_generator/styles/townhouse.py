@@ -32,6 +32,9 @@ class TownhouseStyle(HotelStyle):
     def description(self) -> str:
         return "Narrow and tall with mansard roof, front stoop, and bay window"
 
+    def preferred_layout_strategy(self) -> str:
+        return "row"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

@@ -32,6 +32,9 @@ class SkyscraperStyle(HotelStyle):
     def description(self) -> str:
         return "Tall slender tower on a wider podium base with crown element"
 
+    def preferred_layout_strategy(self) -> str:
+        return "hierarchical"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

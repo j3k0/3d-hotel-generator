@@ -32,6 +32,9 @@ class ArtDecoStyle(HotelStyle):
     def description(self) -> str:
         return "Stepped ziggurat profile with vertical fins and geometric crown"
 
+    def preferred_layout_strategy(self) -> str:
+        return "hierarchical"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

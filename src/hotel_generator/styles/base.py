@@ -57,6 +57,13 @@ class HotelStyle(abc.ABC):
         """Validate and clean style-specific params. Override in subclasses."""
         return params
 
+    def preferred_layout_strategy(self) -> str:
+        """Return the preferred layout strategy name for this style.
+
+        Override in subclasses. Default is 'row'.
+        """
+        return "row"
+
 
 def list_styles() -> list[dict]:
     """List all registered styles with metadata."""

@@ -35,6 +35,9 @@ class ModernStyle(HotelStyle):
     def description(self) -> str:
         return "Clean rectangular geometry with flat roof, horizontal window bands, and optional penthouse"
 
+    def preferred_layout_strategy(self) -> str:
+        return "campus"
+
     def style_params_schema(self) -> dict[str, Any]:
         return {
             "type": "object",

@@ -272,6 +272,29 @@ STEP_GATES = {
              "assert len(p.building_roles) == 4"),
         ],
     },
+    13: {
+        "description": "Layout engine: 6 strategies + overlap detection",
+        "tests": ["tests/test_layout.py"],
+        "checks": [
+            ("6 strategies registered",
+             "from hotel_generator.layout.strategies import STRATEGIES; "
+             "assert len(STRATEGIES) == 6; "
+             "assert 'row' in STRATEGIES; assert 'courtyard' in STRATEGIES"),
+            ("LayoutEngine produces valid layout",
+             "from hotel_generator.layout.engine import LayoutEngine; "
+             "from hotel_generator.config import ComplexParams; "
+             "engine = LayoutEngine(); "
+             "params = ComplexParams(style_name='modern', num_buildings=4); "
+             "placements = engine.compute_layout(params, strategy='row'); "
+             "assert len(placements) == 4"),
+            ("all styles have preferred strategy",
+             "from hotel_generator.styles.base import STYLE_REGISTRY\n"
+             "from hotel_generator.layout.strategies import STRATEGIES\n"
+             "for name, style in STYLE_REGISTRY.items():\n"
+             "    s = style.preferred_layout_strategy()\n"
+             "    assert s in STRATEGIES, name + ' has invalid strategy ' + s\n"),
+        ],
+    },
 }
 
 

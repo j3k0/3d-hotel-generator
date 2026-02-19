@@ -37,6 +37,9 @@ class ClassicalStyle(HotelStyle):
     def description(self) -> str:
         return "Symmetric facade with columns, entablature, and triangular pediment"
 
+    def preferred_layout_strategy(self) -> str:
+        return "courtyard"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width

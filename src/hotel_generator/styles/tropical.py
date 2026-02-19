@@ -33,6 +33,9 @@ class TropicalStyle(HotelStyle):
     def description(self) -> str:
         return "Deep overhanging eaves with supports, raised on stilts, multi-tier roof"
 
+    def preferred_layout_strategy(self) -> str:
+        return "cluster"
+
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
         w = params.width
