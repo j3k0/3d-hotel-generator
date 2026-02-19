@@ -46,7 +46,8 @@ def render_style_grid(
         print("ERROR: Grid rendering requires Pillow. Install with: pip install Pillow")
         sys.exit(1)
 
-    from scripts.render_hotel import render_manifold_to_images
+    sys.path.insert(0, str(Path(__file__).parent))
+    from render_hotel import render_manifold_to_images
     from hotel_generator.assembly.building import HotelBuilder
     from hotel_generator.config import BuildingParams
     from hotel_generator.settings import Settings

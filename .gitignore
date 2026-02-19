@@ -3,7 +3,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-renders/
+renders/grid_tmp/
 .eggs/
-*.stl
-*.glb
+# Allow STLs and renders committed to renders/ but ignore elsewhere
+web/*.stl
+web/*.glb
