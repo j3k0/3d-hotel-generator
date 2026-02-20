@@ -89,7 +89,7 @@ _register(HotelPreset(
     num_buildings=4,
     building_roles=["main", "annex", "annex", "annex"],
     size_hints={
-        "main": {"width": 1.0, "depth": 0.7, "floors": 1.5},
+        "main": {"width": 1.0, "depth": 0.7, "floors": 2.0},
         "annex": {"width": 0.6, "depth": 0.4, "floors": 0.85},
     },
 ))
