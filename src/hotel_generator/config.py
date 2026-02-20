@@ -168,7 +168,7 @@ class ComplexParams(BaseModel):
     style_params: dict[str, Any] = {}
     lot_width: float | None = None
     lot_depth: float | None = None
-    building_spacing: float = 5.0
+    building_spacing: float = 8.0
     placements: list[BuildingPlacement] | None = None
     preset: str | None = None
 

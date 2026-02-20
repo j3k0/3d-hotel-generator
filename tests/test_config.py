@@ -130,7 +130,7 @@ class TestComplexParams:
     def test_defaults(self):
         p = ComplexParams(style_name="modern")
         assert p.num_buildings == 3
-        assert p.building_spacing == 5.0
+        assert p.building_spacing == 8.0
         assert p.max_triangles == 200_000
         assert p.placements is None
         assert p.preset is None
