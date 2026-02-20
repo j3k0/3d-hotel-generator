@@ -11,7 +11,7 @@ from hotel_generator.config import BuildingParams, PrinterProfile
 from hotel_generator.geometry.primitives import box, BOOLEAN_EMBED, BOOLEAN_OVERSHOOT
 from hotel_generator.geometry.transforms import translate
 from hotel_generator.components.massing import rect_mass
-from hotel_generator.components.roof import hipped_roof
+from hotel_generator.components.roof import hipped_roof, pagoda_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.column import square_column
 from hotel_generator.components.scale import ScaleContext
@@ -94,22 +94,18 @@ class TropicalStyle(HotelStyle):
             col = translate(col, x=x, y=y)
             additions.append(col)
 
-        # Main hipped roof with deep overhang
+        # Pagoda-style multi-tier roof — distinctive Japanese/East Asian silhouette
         overhang = sc.eave_overhang * 1.5
-        roof_w = w + 2 * overhang
-        roof_d = d + 2 * overhang
-        roof_h = fh * 1.0
-        roof = hipped_roof(roof_w, roof_d, roof_h)
+        roof_h = fh * 0.9
+        roof = pagoda_roof(
+            w, d,
+            tier_height=roof_h,
+            num_tiers=3,
+            overhang=overhang,
+            tier_shrink=0.72,
+        )
         roof = translate(roof, z=total_h - BOOLEAN_EMBED)
         additions.append(roof)
-
-        # Second tier roof (smaller, on top)
-        tier2_w = w * 0.6 + 2 * overhang * 0.5
-        tier2_d = d * 0.6 + 2 * overhang * 0.5
-        tier2_h = fh * 0.6
-        tier2_roof = hipped_roof(tier2_w, tier2_d, tier2_h)
-        tier2_roof = translate(tier2_roof, z=total_h + roof_h * 0.5)
-        additions.append(tier2_roof)
 
         # Overhang support brackets (45-degree, under the eaves)
         from hotel_generator.geometry.primitives import extrude_polygon

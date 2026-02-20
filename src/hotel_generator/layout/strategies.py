@@ -9,12 +9,13 @@ from hotel_generator.config import BuildingPlacement
 
 
 # Role-based sizing multipliers: (width_factor, depth_factor, floor_factor)
+# Asymmetric width/depth creates more rectangular, varied building shapes
 ROLE_SIZING = {
-    "main": (1.0, 1.0, 1.0),
-    "wing": (0.7, 0.7, 0.85),
-    "annex": (0.5, 0.5, 0.7),
-    "tower": (0.4, 0.4, 1.5),
-    "pavilion": (0.4, 0.4, 0.35),
+    "main": (1.0, 0.85, 1.0),
+    "wing": (0.8, 0.55, 0.85),
+    "annex": (0.55, 0.45, 0.7),
+    "tower": (0.35, 0.35, 2.0),
+    "pavilion": (0.45, 0.35, 0.35),
 }
 
 

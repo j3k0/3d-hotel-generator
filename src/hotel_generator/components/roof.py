@@ -1,4 +1,4 @@
-"""Roof generators: flat, gabled, hipped, mansard, barrel."""
+"""Roof generators: flat, gabled, hipped, mansard, barrel, pagoda, onion dome."""
 
 from manifold3d import Manifold
 
@@ -6,10 +6,12 @@ from hotel_generator.geometry.primitives import (
     box,
     extrude_polygon,
     cylinder,
+    cone,
+    revolve_profile,
     BOOLEAN_EMBED,
 )
 from hotel_generator.geometry.booleans import union_all
-from hotel_generator.geometry.transforms import translate, rotate_z, rotate_x
+from hotel_generator.geometry.transforms import translate, rotate_z, rotate_x, safe_scale
 
 
 def flat_roof(
@@ -181,8 +183,109 @@ def barrel_roof(
 
     # Scale height if needed
     if abs(height - radius) > 0.01:
-        from hotel_generator.geometry.transforms import safe_scale
         scale_z = height / radius if radius > 0 else 1.0
         cyl = safe_scale(cyl, 1.0, 1.0, scale_z)
 
     return cyl
+
+
+def pagoda_roof(
+    width: float,
+    depth: float,
+    tier_height: float,
+    num_tiers: int = 3,
+    overhang: float | None = None,
+    tier_shrink: float = 0.7,
+) -> Manifold:
+    """Multi-tiered pagoda roof with upswept eaves. Base at Z=0.
+
+    Each tier is a hipped roof that overshoots the footprint (eave overhang),
+    stacked with decreasing size. Produces the distinctive Japanese/East Asian
+    pagoda silhouette.
+
+    Args:
+        width: Base width (mm).
+        depth: Base depth (mm).
+        tier_height: Height of each tier (mm).
+        num_tiers: Number of stacked roof tiers (2-5).
+        overhang: Eave overhang per tier (mm). None = auto from width.
+        tier_shrink: Scale factor between successive tiers (0.6-0.85).
+    """
+    ovh = overhang if overhang is not None else width * 0.12
+    parts = []
+    z = 0.0
+    tw, td = width, depth
+    for i in range(num_tiers):
+        # Each tier: a hipped roof with overhang, plus a thin slab separator
+        roof_w = tw + 2 * ovh
+        roof_d = td + 2 * ovh
+        tier = hipped_roof(roof_w, roof_d, tier_height)
+        tier = translate(tier, z=z)
+        parts.append(tier)
+
+        # Thin slab between tiers for visual separation
+        if i < num_tiers - 1:
+            slab = box(tw * 0.85, td * 0.85, tier_height * 0.15)
+            slab = translate(slab, z=z + tier_height * 0.6)
+            parts.append(slab)
+
+        z += tier_height * 0.65  # overlap tiers slightly
+        tw *= tier_shrink
+        td *= tier_shrink
+        ovh *= tier_shrink
+
+    # Finial spire at top
+    finial_r = min(tw, td) * 0.15
+    if finial_r > 0.2:
+        finial = cylinder(finial_r, tier_height * 0.8)
+        finial = translate(finial, z=z - tier_height * 0.1)
+        parts.append(finial)
+
+    return union_all(parts)
+
+
+def onion_dome(
+    radius: float,
+    height: float,
+    segments: int = 16,
+) -> Manifold:
+    """Onion/bulbous dome (Mughal/Indian style). Base at Z=0.
+
+    Creates the characteristic bulbous profile that swells outward
+    above the base before tapering to a point, as seen on the Taj Mahal.
+
+    Args:
+        radius: Maximum dome radius at the widest point (mm).
+        height: Total dome height from base to tip (mm).
+        segments: Number of revolution segments.
+    """
+    # Build a half-profile in the XZ plane for revolution around the Z axis.
+    # The profile is: narrow neck at base -> bulge outward -> taper to point.
+    import math
+    num_pts = 20
+    profile_pts = []
+    for i in range(num_pts + 1):
+        t = i / num_pts  # 0 to 1 (base to tip)
+        z = t * height
+        # Onion shape: sin curve that peaks around t=0.35
+        # with a narrower neck at the base
+        if t < 0.1:
+            # Neck (base attachment)
+            r = radius * 0.65 * (t / 0.1)
+        elif t < 0.45:
+            # Bulge outward
+            frac = (t - 0.1) / 0.35
+            r = radius * (0.65 + 0.35 * math.sin(frac * math.pi / 2))
+        else:
+            # Taper to point
+            frac = (t - 0.45) / 0.55
+            r = radius * math.cos(frac * math.pi / 2)
+        r = max(r, 0.05)  # Avoid zero radius at tip
+        profile_pts.append((r, z))
+
+    # Close the profile along the axis
+    profile_pts.append((0.05, height))
+    profile_pts.append((0.05, 0))
+
+    result = revolve_profile(profile_pts, segments=segments)
+    return result
