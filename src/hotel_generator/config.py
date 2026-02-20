@@ -171,6 +171,7 @@ class ComplexParams(BaseModel):
     building_spacing: float = 8.0
     placements: list[BuildingPlacement] | None = None
     preset: str | None = None
+    bend_angle: float = 0.0  # Degrees to bend the complex around the vertical axis
 
     @model_validator(mode="after")
     def check_num_buildings(self):

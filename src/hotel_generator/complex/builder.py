@@ -14,7 +14,7 @@ from hotel_generator.config import BuildingParams, BuildingPlacement, ComplexPar
 from hotel_generator.complex.base_plate import complex_base_plate
 from hotel_generator.errors import InvalidParamsError
 from hotel_generator.geometry.booleans import union_all
-from hotel_generator.geometry.transforms import translate, rotate_z
+from hotel_generator.geometry.transforms import translate, rotate_z, bend_around_z
 from hotel_generator.layout.engine import LayoutEngine
 from hotel_generator.layout.placement import compute_lot_bounds
 from hotel_generator.settings import Settings
@@ -72,11 +72,18 @@ class ComplexBuilder:
         strategy = style.preferred_layout_strategy()
         roles = None
         size_hints = None
+        bend_angle = params.bend_angle
         if params.preset is not None:
             from hotel_generator.complex.presets import get_preset
             preset = get_preset(params.preset)
             roles = preset.building_roles
             size_hints = preset.size_hints or None
+            # Preset can override layout strategy (e.g. "row" for bent complexes)
+            if preset.layout_override:
+                strategy = preset.layout_override
+            # Preset bend_angle takes effect if params doesn't override
+            if bend_angle == 0.0 and preset.bend_angle != 0.0:
+                bend_angle = preset.bend_angle
         placements = self.layout_engine.compute_layout(
             params, strategy=strategy, roles=roles, size_hints=size_hints,
         )
@@ -143,6 +150,12 @@ class ComplexBuilder:
         all_parts = positioned + [base]
         combined = union_all(all_parts)
 
+        # 7. Apply vertical bend if requested
+        if bend_angle != 0.0:
+            combined = bend_around_z(combined, bend_angle)
+            # Also bend the base plate separately for export
+            base = bend_around_z(base, bend_angle)
+
         elapsed = time.time() - start_time
 
         return ComplexResult(
@@ -160,6 +173,7 @@ class ComplexBuilder:
                 "seed": params.seed,
                 "strategy": strategy,
                 "preset": params.preset,
+                "bend_angle": bend_angle,
             },
         )
 
@@ -167,6 +181,8 @@ class ComplexBuilder:
         """Apply preset configuration to ComplexParams."""
         from hotel_generator.complex.presets import get_preset
         preset = get_preset(params.preset)
+        # Use params.bend_angle if explicitly set, otherwise use preset's
+        bend = params.bend_angle if params.bend_angle != 0.0 else preset.bend_angle
         return ComplexParams(
             style_name=preset.style_name,
             num_buildings=preset.num_buildings,
@@ -179,4 +195,5 @@ class ComplexBuilder:
             building_spacing=params.building_spacing,
             placements=params.placements,
             preset=params.preset,
+            bend_angle=bend,
         )
