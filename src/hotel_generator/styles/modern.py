@@ -84,7 +84,7 @@ class ModernStyle(HotelStyle):
         style_p = self.validate_style_params(params.style_params)
         w = params.width
         d = params.depth
-        num_floors = params.num_floors
+        num_floors = max(params.num_floors, 5)
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
 

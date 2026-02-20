@@ -56,7 +56,7 @@ class TestBuildingParams:
     def test_defaults(self):
         p = BuildingParams(style_name="modern")
         assert p.width == 30.0
-        assert p.num_floors == 4
+        assert p.num_floors == 7
         assert p.printer_type == "fdm"
 
     def test_aspect_ratio_rejected(self):
@@ -130,7 +130,7 @@ class TestComplexParams:
     def test_defaults(self):
         p = ComplexParams(style_name="modern")
         assert p.num_buildings == 3
-        assert p.building_spacing == 5.0
+        assert p.building_spacing == 8.0
         assert p.max_triangles == 200_000
         assert p.placements is None
         assert p.preset is None

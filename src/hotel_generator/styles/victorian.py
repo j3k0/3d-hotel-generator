@@ -18,7 +18,7 @@ from hotel_generator.geometry.primitives import (
 from hotel_generator.geometry.transforms import translate
 from hotel_generator.geometry.booleans import union_all
 from hotel_generator.components.massing import l_shape_mass
-from hotel_generator.components.roof import gabled_roof, hipped_roof
+from hotel_generator.components.roof import gabled_roof, hipped_roof, onion_dome
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
 from hotel_generator.components.scale import ScaleContext
@@ -46,7 +46,7 @@ class VictorianStyle(HotelStyle):
         rng = random.Random(params.seed)
         w = params.width
         d = params.depth
-        num_floors = max(params.num_floors, 3)
+        num_floors = max(params.num_floors, 5)
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
         total_h = num_floors * fh
@@ -96,9 +96,10 @@ class VictorianStyle(HotelStyle):
         turret = translate(turret, x=turret_x, y=turret_y)
         additions.append(turret)
 
-        # Conical turret cap — tall and pointed
-        cap_h = fh * 1.2
-        cap = cone(turret_r + sc.roof_overhang * 0.5, 0.0, cap_h)
+        # Onion dome turret cap — Mughal/Indian inspired bulbous dome
+        dome_r = turret_r + sc.roof_overhang * 0.5
+        dome_h = fh * 1.5
+        cap = onion_dome(dome_r, dome_h, segments=16)
         cap = translate(cap, x=turret_x, y=turret_y, z=turret_h - BOOLEAN_EMBED)
         additions.append(cap)
 

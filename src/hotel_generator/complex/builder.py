@@ -9,6 +9,7 @@ from typing import Any
 from manifold3d import Manifold
 
 from hotel_generator.assembly.building import HotelBuilder, BuildResult
+from hotel_generator.components.base import base_slab
 from hotel_generator.config import BuildingParams, BuildingPlacement, ComplexParams, PrinterProfile
 from hotel_generator.complex.base_plate import complex_base_plate
 from hotel_generator.errors import InvalidParamsError
@@ -70,10 +71,15 @@ class ComplexBuilder:
         # 2. Compute layout
         strategy = style.preferred_layout_strategy()
         roles = None
+        size_hints = None
         if params.preset is not None:
             from hotel_generator.complex.presets import get_preset
-            roles = get_preset(params.preset).building_roles
-        placements = self.layout_engine.compute_layout(params, strategy=strategy, roles=roles)
+            preset = get_preset(params.preset)
+            roles = preset.building_roles
+            size_hints = preset.size_hints or None
+        placements = self.layout_engine.compute_layout(
+            params, strategy=strategy, roles=roles, size_hints=size_hints,
+        )
 
         # 3. Generate each building
         per_building_tris = params.max_triangles // max(1, params.num_buildings)
@@ -95,6 +101,21 @@ class ComplexBuilder:
 
             result = self.hotel_builder.build(building_params, skip_base=True)
             buildings.append(result)
+
+            # 3b. Add a wider per-building stability base
+            # Overhang scales with building height so tall buildings don't topple
+            bldg_height = placement.num_floors * placement.floor_height
+            stability_overhang = max(
+                profile.base_thickness,
+                bldg_height * 0.08,
+            )
+            base = base_slab(
+                width=placement.width + 2 * stability_overhang,
+                depth=placement.depth + 2 * stability_overhang,
+                thickness=profile.base_thickness,
+                chamfer=profile.base_chamfer,
+            )
+            result.manifold = union_all([result.manifold, base])
 
             # 4. Position on lot
             m = result.manifold

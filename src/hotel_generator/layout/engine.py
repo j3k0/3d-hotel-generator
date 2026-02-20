@@ -18,6 +18,7 @@ class LayoutEngine:
         params: ComplexParams,
         strategy: str | None = None,
         roles: list[str] | None = None,
+        size_hints: dict[str, dict[str, float]] | None = None,
     ) -> list[BuildingPlacement]:
         """Compute placements for a complex.
 
@@ -45,10 +46,11 @@ class LayoutEngine:
             rng=rng,
             base_width=30.0,  # default base building width
             base_depth=25.0,  # default base building depth
-            base_floors=4,
+            base_floors=7,
             floor_height=5.0,
             spacing=params.building_spacing,
             roles=roles,
+            size_hints=size_hints,
         )
 
         # Validate no overlaps

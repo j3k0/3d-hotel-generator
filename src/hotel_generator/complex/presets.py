@@ -44,13 +44,13 @@ def _register(preset: HotelPreset) -> HotelPreset:
 _register(HotelPreset(
     name="royal",
     display_name="Royal",
-    description="Grand classical hotel with courtyard, wings, and clock tower",
+    description="Grand classical hotel with courtyard, wide wings, and clock tower",
     style_name="classical",
     num_buildings=4,
     building_roles=["main", "wing", "wing", "tower"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+        "main": {"width": 1.1, "depth": 0.8, "floors": 1.0},
+        "wing": {"width": 0.8, "depth": 0.55, "floors": 0.85},
         "tower": {"width": 0.3, "depth": 0.3, "floors": 1.5},
     },
 ))
@@ -63,85 +63,87 @@ _register(HotelPreset(
     num_buildings=3,
     building_roles=["main", "annex", "annex"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "annex": {"width": 0.5, "depth": 0.5, "floors": 0.7},
+        "main": {"width": 0.9, "depth": 0.75, "floors": 1.25},
+        "annex": {"width": 0.5, "depth": 0.4, "floors": 0.85},
     },
 ))
 
 _register(HotelPreset(
     name="waikiki",
     display_name="Waikiki",
-    description="Tropical resort with main lodge and scattered pavilions",
+    description="Tropical resort with main lodge and scattered pagoda pavilions",
     style_name="tropical",
     num_buildings=5,
     building_roles=["main", "pavilion", "pavilion", "pavilion", "pavilion"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "pavilion": {"width": 0.4, "depth": 0.4, "floors": 0.35},
+        "main": {"width": 1.1, "depth": 0.8, "floors": 1.0},
+        "pavilion": {"width": 0.45, "depth": 0.35, "floors": 0.35},
     },
 ))
 
 _register(HotelPreset(
     name="president",
     display_name="President",
-    description="Modern campus-style hotel with main building and annexes",
+    description="Imposing modern tower complex with cascading heights",
     style_name="modern",
     num_buildings=4,
-    building_roles=["main", "annex", "annex", "annex"],
+    building_roles=["main", "tower", "wing", "annex"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "annex": {"width": 0.5, "depth": 0.5, "floors": 0.7},
+        "main": {"width": 1.0, "depth": 0.7, "floors": 3.58},     # 25 floors
+        "tower": {"width": 0.75, "depth": 0.55, "floors": 2.86},   # 20 floors
+        "wing": {"width": 0.65, "depth": 0.45, "floors": 2.15},    # 15 floors
+        "annex": {"width": 0.55, "depth": 0.4, "floors": 1.43},    # 10 floors
     },
 ))
 
 _register(HotelPreset(
     name="safari",
     display_name="Safari",
-    description="Mediterranean lodge with L-shaped wings",
+    description="Mediterranean lodge with wide, low-slung wings",
     style_name="mediterranean",
     num_buildings=3,
     building_roles=["main", "wing", "wing"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+        "main": {"width": 1.15, "depth": 0.75, "floors": 0.75},
+        "wing": {"width": 0.85, "depth": 0.5, "floors": 0.6},
     },
 ))
 
 _register(HotelPreset(
     name="taj_mahal",
     display_name="Taj Mahal",
-    description="Victorian palace with central tower and flanking pavilions",
+    description="Victorian-Mughal palace with onion-domed turrets and flanking pavilions",
     style_name="victorian",
     num_buildings=3,
     building_roles=["main", "pavilion", "pavilion"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
-        "pavilion": {"width": 0.4, "depth": 0.4, "floors": 0.35},
+        "main": {"width": 1.0, "depth": 0.85, "floors": 1.0},
+        "pavilion": {"width": 0.45, "depth": 0.35, "floors": 0.5},
     },
 ))
 
 _register(HotelPreset(
     name="letoile",
     display_name="L'Etoile",
-    description="Row of elegant townhouses forming a unified hotel",
+    description="Row of elegant narrow townhouses forming a unified hotel",
     style_name="townhouse",
     num_buildings=4,
     building_roles=["main", "main", "main", "main"],
     size_hints={
-        "main": {"width": 1.0, "depth": 1.0, "floors": 1.0},
+        "main": {"width": 0.7, "depth": 1.0, "floors": 1.15},
     },
 ))
 
 _register(HotelPreset(
     name="boomerang",
     display_name="Boomerang",
-    description="Tall central skyscraper flanked by lower wings",
+    description="Soaring central skyscraper flanked by lower rectangular wings",
     style_name="skyscraper",
     num_buildings=3,
     building_roles=["tower", "wing", "wing"],
     size_hints={
-        "tower": {"width": 0.4, "depth": 0.4, "floors": 1.5},
-        "wing": {"width": 0.7, "depth": 0.7, "floors": 0.85},
+        "tower": {"width": 0.35, "depth": 0.35, "floors": 2.5},
+        "wing": {"width": 0.8, "depth": 0.5, "floors": 0.85},
     },
 ))
 

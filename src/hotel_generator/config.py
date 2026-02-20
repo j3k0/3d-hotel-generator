@@ -103,7 +103,7 @@ class BuildingParams(BaseModel):
     style_name: str
     width: float = 30.0
     depth: float = 25.0
-    num_floors: int = 4
+    num_floors: int = 7
     floor_height: float = 5.0
     printer_type: str = "fdm"
     seed: int = 42
@@ -141,7 +141,7 @@ class BuildingPlacement(BaseModel):
     rotation: float = 0.0
     width: float = 30.0
     depth: float = 25.0
-    num_floors: int = 4
+    num_floors: int = 7
     floor_height: float = 5.0
     role: str = "main"
 
@@ -168,7 +168,7 @@ class ComplexParams(BaseModel):
     style_params: dict[str, Any] = {}
     lot_width: float | None = None
     lot_depth: float | None = None
-    building_spacing: float = 5.0
+    building_spacing: float = 8.0
     placements: list[BuildingPlacement] | None = None
     preset: str | None = None
 
