@@ -84,13 +84,15 @@ _register(HotelPreset(
 _register(HotelPreset(
     name="president",
     display_name="President",
-    description="Imposing modern tower complex with commanding main building and annexes",
+    description="Imposing modern tower complex with cascading heights",
     style_name="modern",
     num_buildings=4,
-    building_roles=["main", "annex", "annex", "annex"],
+    building_roles=["main", "tower", "wing", "annex"],
     size_hints={
-        "main": {"width": 1.0, "depth": 0.7, "floors": 2.0},
-        "annex": {"width": 0.6, "depth": 0.4, "floors": 0.85},
+        "main": {"width": 1.0, "depth": 0.7, "floors": 3.58},     # 25 floors
+        "tower": {"width": 0.75, "depth": 0.55, "floors": 2.86},   # 20 floors
+        "wing": {"width": 0.65, "depth": 0.45, "floors": 2.15},    # 15 floors
+        "annex": {"width": 0.55, "depth": 0.4, "floors": 1.43},    # 10 floors
     },
 ))
 
