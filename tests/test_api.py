@@ -131,7 +131,7 @@ class TestPresetsEndpoint:
         assert r.status_code == 200
         data = r.json()
         assert "presets" in data
-        assert len(data["presets"]) == 8
+        assert len(data["presets"]) == 9
 
     def test_preset_has_fields(self, client):
         r = client.get("/presets")

@@ -15,9 +15,9 @@ from hotel_generator.styles.base import STYLE_REGISTRY
 
 
 class TestPresetRegistry:
-    def test_all_8_registered(self):
+    def test_all_presets_registered(self):
         expected = {"royal", "fujiyama", "waikiki", "president",
-                    "safari", "taj_mahal", "letoile", "boomerang"}
+                    "safari", "taj_mahal", "letoile", "boomerang", "vacation"}
         assert set(PRESET_REGISTRY.keys()) == expected
 
     def test_valid_styles(self):
@@ -35,7 +35,7 @@ class TestPresetRegistry:
 
     def test_list_presets(self):
         presets = list_presets()
-        assert len(presets) == 8
+        assert len(presets) == 9
         names = [p.name for p in presets]
         assert "royal" in names
         assert "waikiki" in names

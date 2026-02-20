@@ -20,6 +20,8 @@ class HotelPreset:
     num_buildings: int
     building_roles: list[str]
     size_hints: dict[str, dict[str, float]] = field(default_factory=dict)
+    bend_angle: float = 0.0  # Degrees to bend the complex around the vertical axis
+    layout_override: str | None = None  # Force a specific layout strategy
 
     def to_preset_info(self) -> PresetInfo:
         return PresetInfo(
@@ -125,19 +127,33 @@ _register(HotelPreset(
 _register(HotelPreset(
     name="letoile",
     display_name="L'Etoile",
-    description="Row of elegant narrow townhouses forming a unified hotel",
+    description="Curved crescent of elegant narrow townhouses",
     style_name="townhouse",
     num_buildings=4,
     building_roles=["main", "main", "main", "main"],
     size_hints={
         "main": {"width": 0.7, "depth": 1.0, "floors": 1.15},
     },
+    bend_angle=60.0,
+))
+
+_register(HotelPreset(
+    name="vacation",
+    display_name="Vacation",
+    description="Sweeping curved modern high-rise resort tower",
+    style_name="modern",
+    num_buildings=1,
+    building_roles=["main"],
+    size_hints={
+        "main": {"width": 3.33, "depth": 0.8, "floors": 2.86},  # ~100x20x100mm
+    },
+    bend_angle=90.0,
 ))
 
 _register(HotelPreset(
     name="boomerang",
     display_name="Boomerang",
-    description="Soaring central skyscraper flanked by lower rectangular wings",
+    description="Curved skyscraper complex swept into a boomerang arc",
     style_name="skyscraper",
     num_buildings=3,
     building_roles=["tower", "wing", "wing"],
@@ -145,6 +161,8 @@ _register(HotelPreset(
         "tower": {"width": 0.35, "depth": 0.35, "floors": 2.5},
         "wing": {"width": 0.8, "depth": 0.5, "floors": 0.85},
     },
+    bend_angle=120.0,
+    layout_override="row",
 ))
 
 
