@@ -39,7 +39,7 @@ class TownhouseStyle(HotelStyle):
         rng = random.Random(params.seed)
         w = params.width
         d = params.depth
-        num_floors = max(params.num_floors, 3)
+        num_floors = max(params.num_floors, 5)
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
         total_h = num_floors * fh

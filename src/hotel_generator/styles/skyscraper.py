@@ -39,7 +39,7 @@ class SkyscraperStyle(HotelStyle):
         rng = random.Random(params.seed)
         w = params.width
         d = params.depth
-        num_floors = max(params.num_floors, 8)  # Skyscrapers need real height
+        num_floors = max(params.num_floors, 12)  # Skyscrapers need real height
         fh = params.floor_height
         wall_t = profile.min_wall_thickness
 

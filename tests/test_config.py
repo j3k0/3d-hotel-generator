@@ -56,7 +56,7 @@ class TestBuildingParams:
     def test_defaults(self):
         p = BuildingParams(style_name="modern")
         assert p.width == 30.0
-        assert p.num_floors == 4
+        assert p.num_floors == 7
         assert p.printer_type == "fdm"
 
     def test_aspect_ratio_rejected(self):

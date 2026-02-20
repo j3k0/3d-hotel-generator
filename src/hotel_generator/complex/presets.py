@@ -84,13 +84,13 @@ _register(HotelPreset(
 _register(HotelPreset(
     name="president",
     display_name="President",
-    description="Modern campus-style hotel with tall main building and rectangular annexes",
+    description="Imposing modern tower complex with commanding main building and annexes",
     style_name="modern",
     num_buildings=4,
     building_roles=["main", "annex", "annex", "annex"],
     size_hints={
-        "main": {"width": 1.0, "depth": 0.7, "floors": 1.25},
-        "annex": {"width": 0.6, "depth": 0.4, "floors": 0.7},
+        "main": {"width": 1.0, "depth": 0.7, "floors": 1.5},
+        "annex": {"width": 0.6, "depth": 0.4, "floors": 0.85},
     },
 ))
 
@@ -140,8 +140,8 @@ _register(HotelPreset(
     num_buildings=3,
     building_roles=["tower", "wing", "wing"],
     size_hints={
-        "tower": {"width": 0.35, "depth": 0.35, "floors": 2.0},
-        "wing": {"width": 0.8, "depth": 0.5, "floors": 0.75},
+        "tower": {"width": 0.35, "depth": 0.35, "floors": 2.5},
+        "wing": {"width": 0.8, "depth": 0.5, "floors": 0.85},
     },
 ))
 

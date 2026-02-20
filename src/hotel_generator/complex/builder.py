@@ -70,10 +70,15 @@ class ComplexBuilder:
         # 2. Compute layout
         strategy = style.preferred_layout_strategy()
         roles = None
+        size_hints = None
         if params.preset is not None:
             from hotel_generator.complex.presets import get_preset
-            roles = get_preset(params.preset).building_roles
-        placements = self.layout_engine.compute_layout(params, strategy=strategy, roles=roles)
+            preset = get_preset(params.preset)
+            roles = preset.building_roles
+            size_hints = preset.size_hints or None
+        placements = self.layout_engine.compute_layout(
+            params, strategy=strategy, roles=roles, size_hints=size_hints,
+        )
 
         # 3. Generate each building
         per_building_tris = params.max_triangles // max(1, params.num_buildings)
