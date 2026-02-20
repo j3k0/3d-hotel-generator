@@ -138,6 +138,19 @@ _register(HotelPreset(
 ))
 
 _register(HotelPreset(
+    name="vacation",
+    display_name="Vacation",
+    description="Sweeping curved modern high-rise resort tower",
+    style_name="modern",
+    num_buildings=1,
+    building_roles=["main"],
+    size_hints={
+        "main": {"width": 3.33, "depth": 0.8, "floors": 2.86},  # ~100x20x100mm
+    },
+    bend_angle=90.0,
+))
+
+_register(HotelPreset(
     name="boomerang",
     display_name="Boomerang",
     description="Curved skyscraper complex swept into a boomerang arc",
