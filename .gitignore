@@ -4,6 +4,9 @@ __pycache__/
 dist/
 build/
 renders/grid_tmp/
+renders/full_board/
+renders/preset_grid_tmp/
+renders/_board_preview_tmp/
 .eggs/
 # Allow STLs and renders committed to renders/ but ignore elsewhere
 web/*.stl
