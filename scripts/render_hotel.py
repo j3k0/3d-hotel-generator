@@ -365,6 +365,121 @@ def generate_complex_and_render(
     return paths
 
 
+def _assemble_board_grid(cell_images, labels, cols, cell_resolution, output_path):
+    """Assemble cell images into a labeled grid and save as PNG."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    rows = (len(cell_images) + cols - 1) // cols
+    label_height = 30
+    grid_w = cols * cell_resolution
+    grid_h = rows * (cell_resolution + label_height)
+    grid = Image.new("RGB", (grid_w, grid_h), (255, 255, 255))
+    draw = ImageDraw.Draw(grid)
+
+    for i, (img, label_text) in enumerate(zip(cell_images, labels)):
+        row, col = divmod(i, cols)
+        x = col * cell_resolution
+        y = row * (cell_resolution + label_height)
+        grid.paste(img, (x, y))
+
+        label_y = y + cell_resolution + 5
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        except (OSError, IOError):
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), label_text, font=font)
+        text_w = bbox[2] - bbox[0]
+        draw.text((x + (cell_resolution - text_w) // 2, label_y), label_text, fill=(0, 0, 0), font=font)
+
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    grid.save(output)
+    print(f"  Board preview saved to {output}")
+    return str(output)
+
+
+def generate_board_output(
+    road_shape: str = "loop",
+    seed: int = 42,
+    printer_type: str = "fdm",
+    output_dir: str = "renders",
+    resolution: tuple[int, int] = (1024, 1024),
+    supersample: int = 2,
+    lot_width: float = 100.0,
+    lot_depth: float = 80.0,
+) -> list[str]:
+    """Generate a full game board: STL files + composite preview PNG.
+
+    Creates property_NN_preset/ subdirectories with STLs, a board_manifest.json,
+    and a board_preview.png composite grid of all 8 property plates.
+    """
+    from PIL import Image
+
+    from hotel_generator.board.board_builder import BoardBuilder
+    from hotel_generator.board.config import BoardParams
+    from hotel_generator.complex.presets import get_preset
+    from hotel_generator.export.stl import export_board_to_directory
+    from hotel_generator.settings import Settings
+
+    print(f"Generating game board ({road_shape}, seed={seed})...")
+    board_params = BoardParams(
+        road_shape=road_shape,
+        property_width=lot_width,
+        property_depth=lot_depth,
+        printer_type=printer_type,
+        seed=seed,
+    )
+    builder = BoardBuilder(Settings())
+    result = builder.build(board_params)
+
+    # Export all STLs
+    print("Exporting STL files...")
+    stl_files = export_board_to_directory(result, output_dir)
+    print(f"  Exported {len(stl_files)} files")
+
+    # Render each property at hero angle for composite preview
+    print("Rendering board preview...")
+    out_path = Path(output_dir)
+    tmp_dir = out_path / "_board_preview_tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    cell_res = min(resolution[0], 512)
+    cell_images = []
+    labels = []
+
+    for i, (prop, slot) in enumerate(zip(result.properties, result.property_slots)):
+        preset_name = slot.assigned_preset
+        preset_info = get_preset(preset_name)
+        label = f"{preset_name.title()} ({preset_info.style_name})"
+        print(f"  Rendering {i + 1}/{len(result.properties)}: {label}")
+
+        paths = render_manifold_to_images(
+            prop.plate,
+            output_dir=str(tmp_dir),
+            style_name=f"board_{preset_name}",
+            resolution=(cell_res, cell_res),
+            angles=[(45, 30, "grid")],
+            supersample=supersample,
+        )
+        cell_images.append(Image.open(paths[0]))
+        labels.append(label)
+
+    # Composite into grid
+    preview_path = out_path / "board_preview.png"
+    _assemble_board_grid(cell_images, labels, 4, cell_res, preview_path)
+
+    # Clean up temp files
+    for f in tmp_dir.iterdir():
+        f.unlink()
+    tmp_dir.rmdir()
+
+    all_files = stl_files + ["board_preview.png"]
+    print(f"\nFull board output in {output_dir}/:")
+    print(f"  {len(stl_files)} STL/manifest files")
+    print(f"  1 board preview PNG")
+    return all_files
+
+
 def generate_property_and_render(
     preset_name: str | None = None,
     style_name: str = "modern",
@@ -438,35 +553,17 @@ def main():
             args.complex = True
 
     if args.board:
-        # Generate all 8 property plates
-        from hotel_generator.board.config import BoardParams, DEFAULT_PRESET_ASSIGNMENTS
-        from hotel_generator.board.board_builder import BoardBuilder
-        from hotel_generator.settings import Settings
-
-        print(f"Generating game board ({args.road_shape}, seed={args.seed})...")
-        board_params = BoardParams(
+        # Generate full board: STLs + composite preview PNG
+        paths = generate_board_output(
             road_shape=args.road_shape,
-            property_width=args.lot_width,
-            property_depth=args.lot_depth,
-            printer_type=args.printer,
             seed=args.seed,
+            printer_type=args.printer,
+            output_dir=args.output,
+            resolution=(args.resolution, args.resolution),
+            supersample=args.supersample,
+            lot_width=args.lot_width,
+            lot_depth=args.lot_depth,
         )
-        builder = BoardBuilder(Settings())
-        result = builder.build(board_params)
-
-        all_paths = []
-        for i, (prop, slot) in enumerate(zip(result.properties, result.property_slots)):
-            label = f"board_{slot.assigned_preset}"
-            print(f"Rendering property {i + 1}/{len(result.properties)}: {slot.assigned_preset}")
-            paths = render_manifold_to_images(
-                prop.plate,
-                output_dir=args.output,
-                style_name=label,
-                resolution=(args.resolution, args.resolution),
-                supersample=args.supersample,
-            )
-            all_paths.extend(paths)
-        paths = all_paths
 
     elif args.property:
         paths = generate_property_and_render(
