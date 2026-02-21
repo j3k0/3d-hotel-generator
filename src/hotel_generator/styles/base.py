@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import abc
+from dataclasses import dataclass, field
 from typing import Any
 
 from manifold3d import Manifold
@@ -10,6 +11,20 @@ from manifold3d import Manifold
 from hotel_generator.config import BuildingParams, PrinterProfile
 from hotel_generator.errors import GeometryError, InvalidParamsError
 from hotel_generator.geometry.booleans import union_all, difference_all
+
+
+@dataclass(frozen=True)
+class GardenTheme:
+    """Configuration for a style's garden/leisure area aesthetics."""
+
+    tree_type: str = "deciduous"  # "deciduous", "conifer", "palm"
+    tree_density: float = 0.5  # 0.0-1.0, controls Poisson disk spacing
+    pool_shape: str | None = "rectangular"  # "rectangular", "kidney", "l_shaped", or None
+    pool_size: str = "medium"  # "small", "medium", "large"
+    has_hedges: bool = True
+    hedge_style: str = "border"  # "border", "formal", "sparse"
+    has_terrace: bool = True
+    path_style: str = "straight"  # "straight", "curved"
 
 
 # Global style registry
@@ -63,6 +78,13 @@ class HotelStyle(abc.ABC):
         Override in subclasses. Default is 'row'.
         """
         return "row"
+
+    def garden_theme(self) -> GardenTheme:
+        """Return the garden/leisure theme for this style.
+
+        Override in subclasses for style-specific garden aesthetics.
+        """
+        return GardenTheme()
 
 
 def list_styles() -> list[dict]:

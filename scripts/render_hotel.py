@@ -365,6 +365,53 @@ def generate_complex_and_render(
     return paths
 
 
+def generate_property_and_render(
+    preset_name: str | None = None,
+    style_name: str = "modern",
+    num_buildings: int = 3,
+    seed: int = 42,
+    printer_type: str = "fdm",
+    output_dir: str = "renders",
+    resolution: tuple[int, int] = (1024, 1024),
+    supersample: int = 2,
+    lot_width: float = 100.0,
+    lot_depth: float = 80.0,
+) -> list[str]:
+    """Generate a property plate (buildings + garden + road strip) and render."""
+    from hotel_generator.board.config import PropertyParams
+    from hotel_generator.board.property_builder import PropertyBuilder
+    from hotel_generator.settings import Settings
+
+    label = f"property_{preset_name or style_name}"
+    print(f"Generating property plate '{label}' (seed={seed})...")
+
+    params = PropertyParams(
+        preset=preset_name,
+        style_name=style_name,
+        num_buildings=num_buildings,
+        lot_width=lot_width,
+        lot_depth=lot_depth,
+        printer_type=printer_type,
+        seed=seed,
+    )
+    builder = PropertyBuilder(Settings())
+    result = builder.build(params)
+
+    print(f"  Buildings: {len(result.buildings)}")
+    print(f"  Garden features: {len(result.garden_placements)}")
+    print(f"  Lot: {result.lot_width:.1f} x {result.lot_depth:.1f} mm")
+
+    print(f"Rendering property plate '{label}'...")
+    paths = render_manifold_to_images(
+        result.plate,
+        output_dir=output_dir,
+        style_name=label,
+        resolution=resolution,
+        supersample=supersample,
+    )
+    return paths
+
+
 def main():
     parser = argparse.ArgumentParser(description="Render a hotel style to PNG images")
     parser.add_argument("--style", default="modern", help="Style name (e.g., modern, victorian)")
@@ -377,12 +424,64 @@ def main():
     parser.add_argument("--complex", action="store_true", help="Generate hotel complex instead of single building")
     parser.add_argument("--preset", default=None, help="Named preset (e.g., royal, waikiki). Implies --complex")
     parser.add_argument("--num-buildings", type=int, default=3, help="Number of buildings (complex mode)")
+    # New: property plate and board modes
+    parser.add_argument("--property", action="store_true", help="Generate property plate with garden")
+    parser.add_argument("--board", action="store_true", help="Generate all property plates for game board")
+    parser.add_argument("--road-shape", default="loop", choices=["loop", "serpentine", "linear"],
+                        help="Road layout shape (board mode)")
+    parser.add_argument("--lot-width", type=float, default=100.0, help="Property lot width in mm")
+    parser.add_argument("--lot-depth", type=float, default=80.0, help="Property lot depth in mm")
     args = parser.parse_args()
 
     if args.preset:
-        args.complex = True
+        if not args.property:
+            args.complex = True
 
-    if args.complex:
+    if args.board:
+        # Generate all 8 property plates
+        from hotel_generator.board.config import BoardParams, DEFAULT_PRESET_ASSIGNMENTS
+        from hotel_generator.board.board_builder import BoardBuilder
+        from hotel_generator.settings import Settings
+
+        print(f"Generating game board ({args.road_shape}, seed={args.seed})...")
+        board_params = BoardParams(
+            road_shape=args.road_shape,
+            property_width=args.lot_width,
+            property_depth=args.lot_depth,
+            printer_type=args.printer,
+            seed=args.seed,
+        )
+        builder = BoardBuilder(Settings())
+        result = builder.build(board_params)
+
+        all_paths = []
+        for i, (prop, slot) in enumerate(zip(result.properties, result.property_slots)):
+            label = f"board_{slot.assigned_preset}"
+            print(f"Rendering property {i + 1}/{len(result.properties)}: {slot.assigned_preset}")
+            paths = render_manifold_to_images(
+                prop.plate,
+                output_dir=args.output,
+                style_name=label,
+                resolution=(args.resolution, args.resolution),
+                supersample=args.supersample,
+            )
+            all_paths.extend(paths)
+        paths = all_paths
+
+    elif args.property:
+        paths = generate_property_and_render(
+            preset_name=args.preset,
+            style_name=args.style,
+            num_buildings=args.num_buildings,
+            seed=args.seed,
+            printer_type=args.printer,
+            output_dir=args.output,
+            resolution=(args.resolution, args.resolution),
+            supersample=args.supersample,
+            lot_width=args.lot_width,
+            lot_depth=args.lot_depth,
+        )
+    elif args.complex:
         paths = generate_complex_and_render(
             preset_name=args.preset,
             style_name=args.style,

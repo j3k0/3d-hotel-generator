@@ -9,6 +9,9 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from hotel_generator.assembly.building import HotelBuilder
+from hotel_generator.board.board_builder import BoardBuilder
+from hotel_generator.board.config import BoardParams, PropertyParams
+from hotel_generator.board.property_builder import PropertyBuilder
 from hotel_generator.complex.builder import ComplexBuilder
 from hotel_generator.complex.presets import list_presets
 from hotel_generator.config import BuildingParams, ComplexParams, ErrorResponse
@@ -18,7 +21,12 @@ from hotel_generator.errors import (
     InvalidParamsError,
 )
 from hotel_generator.export.glb import export_glb_bytes
-from hotel_generator.export.stl import export_stl_bytes, export_complex_to_directory
+from hotel_generator.export.stl import (
+    export_board_to_directory,
+    export_property_to_directory,
+    export_stl_bytes,
+    export_complex_to_directory,
+)
 from hotel_generator.settings import Settings
 from hotel_generator.styles.base import list_styles
 
@@ -84,6 +92,16 @@ def get_builder() -> HotelBuilder:
 def get_complex_builder() -> ComplexBuilder:
     """Provide a ComplexBuilder instance. Overridable in tests."""
     return ComplexBuilder(settings)
+
+
+def get_property_builder() -> PropertyBuilder:
+    """Provide a PropertyBuilder instance. Overridable in tests."""
+    return PropertyBuilder(settings)
+
+
+def get_board_builder() -> BoardBuilder:
+    """Provide a BoardBuilder instance. Overridable in tests."""
+    return BoardBuilder(settings)
 
 
 # API routes (sync def for CPU-bound work)
@@ -247,6 +265,100 @@ def complex_export(
         "num_buildings": len(result.buildings),
         "lot_width": result.lot_width,
         "lot_depth": result.lot_depth,
+        "metadata": result.metadata,
+    }
+
+
+# --- Property plate endpoints ---
+
+@app.post("/property/generate")
+def property_generate(
+    params: PropertyParams,
+    builder: PropertyBuilder = Depends(get_property_builder),
+):
+    """Generate a property plate (buildings + garden + road strip) as GLB preview."""
+    result = builder.build(params)
+    glb_bytes = export_glb_bytes(result.plate)
+
+    metadata = {
+        "lot_width": result.lot_width,
+        "lot_depth": result.lot_depth,
+        "num_buildings": len(result.buildings),
+        "num_garden_features": len(result.garden_placements),
+        **result.metadata,
+    }
+
+    return Response(
+        content=glb_bytes,
+        media_type="application/octet-stream",
+        headers={"X-Property-Metadata": json.dumps(metadata)},
+    )
+
+
+@app.post("/property/export")
+def property_export(
+    params: PropertyParams,
+    builder: PropertyBuilder = Depends(get_property_builder),
+):
+    """Export a property plate as separate STL files to output directory."""
+    result = builder.build(params)
+
+    import tempfile
+    output_dir = tempfile.mkdtemp(prefix="hotel_property_")
+    files = export_property_to_directory(result, output_dir)
+
+    return {
+        "output_dir": output_dir,
+        "files": files,
+        "num_buildings": len(result.buildings),
+        "num_garden_features": len(result.garden_placements),
+        "metadata": result.metadata,
+    }
+
+
+# --- Board endpoints ---
+
+@app.post("/board/generate")
+def board_generate(
+    params: BoardParams,
+    builder: BoardBuilder = Depends(get_board_builder),
+):
+    """Generate a full game board. Returns metadata JSON (plates are too large for single GLB)."""
+    result = builder.build(params)
+
+    return {
+        "num_properties": len(result.properties),
+        "road_shape": result.road_shape,
+        "property_slots": [
+            {
+                "index": s.index,
+                "center_x": s.center_x,
+                "center_y": s.center_y,
+                "road_edge": s.road_edge,
+                "preset": s.assigned_preset,
+            }
+            for s in result.property_slots
+        ],
+        "metadata": result.metadata,
+    }
+
+
+@app.post("/board/export")
+def board_export(
+    params: BoardParams,
+    builder: BoardBuilder = Depends(get_board_builder),
+):
+    """Export all property plates to output directory."""
+    result = builder.build(params)
+
+    import tempfile
+    output_dir = tempfile.mkdtemp(prefix="hotel_board_")
+    files = export_board_to_directory(result, output_dir)
+
+    return {
+        "output_dir": output_dir,
+        "files": files,
+        "num_properties": len(result.properties),
         "metadata": result.metadata,
     }
 

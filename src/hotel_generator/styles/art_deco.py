@@ -15,7 +15,7 @@ from hotel_generator.components.roof import flat_roof
 from hotel_generator.components.facade import window_grid_cutouts
 from hotel_generator.components.door import door_cutout
 from hotel_generator.components.scale import ScaleContext
-from hotel_generator.styles.base import HotelStyle, register_style, assemble_building
+from hotel_generator.styles.base import GardenTheme, HotelStyle, register_style, assemble_building
 
 
 @register_style
@@ -34,6 +34,18 @@ class ArtDecoStyle(HotelStyle):
 
     def preferred_layout_strategy(self) -> str:
         return "hierarchical"
+
+    def garden_theme(self) -> GardenTheme:
+        return GardenTheme(
+            tree_type="conifer",
+            tree_density=0.3,
+            pool_shape="rectangular",
+            pool_size="small",
+            has_hedges=True,
+            hedge_style="formal",
+            has_terrace=True,
+            path_style="straight",
+        )
 
     def generate(self, params: BuildingParams, profile: PrinterProfile) -> Manifold:
         rng = random.Random(params.seed)
