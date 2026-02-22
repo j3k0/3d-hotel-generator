@@ -42,6 +42,7 @@
                 <div class="mode-tabs">
                     <button class="mode-tab active" data-mode="single">Single Building</button>
                     <button class="mode-tab" data-mode="complex">Hotel Complex</button>
+                    <button class="mode-tab" data-mode="board">Game Board</button>
                 </div>
 
                 <!-- Complex-only: Preset selector -->
@@ -49,6 +50,16 @@
                     <label for="preset-select">Hotel Preset</label>
                     <select id="preset-select">
                         <option value="">Custom (no preset)</option>
+                    </select>
+                </div>
+
+                <!-- Board-only: Road shape -->
+                <div class="sidebar-section board-only" id="road-shape-section" style="display:none">
+                    <label for="road-shape-select">Road Layout</label>
+                    <select id="road-shape-select">
+                        <option value="loop">Loop (Boulevard)</option>
+                        <option value="serpentine">Serpentine</option>
+                        <option value="linear">Linear</option>
                     </select>
                 </div>
 

@@ -343,6 +343,53 @@ def board_generate(
     }
 
 
+@app.post("/board/preview")
+def board_preview(
+    params: BoardParams,
+    builder: BoardBuilder = Depends(get_board_builder),
+):
+    """Generate a full game board and return assembled GLB for 3D preview.
+
+    Combines all property plates + frame pieces into a single model
+    positioned according to the road layout.
+    """
+    from hotel_generator.geometry.booleans import compose_disjoint
+    from hotel_generator.geometry.transforms import translate as geo_translate
+
+    result = builder.build(params)
+
+    # Assemble all pieces into board coordinates
+    parts = []
+    for prop, slot in zip(result.properties, result.property_slots):
+        placed = geo_translate(prop.plate, x=slot.center_x, y=slot.center_y)
+        parts.append(placed)
+
+    # Add frame pieces (already positioned in board coordinates)
+    if result.frame:
+        for piece in result.frame.all_pieces:
+            parts.append(piece.manifold)
+
+    assembled = compose_disjoint(parts)
+    glb_bytes = export_glb_bytes(assembled)
+
+    metadata = {
+        "num_properties": len(result.properties),
+        "road_shape": result.road_shape,
+        "num_frame_pieces": len(result.frame.all_pieces) if result.frame else 0,
+        "property_slots": [
+            {"index": s.index, "preset": s.assigned_preset}
+            for s in result.property_slots
+        ],
+        **result.metadata,
+    }
+
+    return Response(
+        content=glb_bytes,
+        media_type="application/octet-stream",
+        headers={"X-Board-Metadata": json.dumps(metadata)},
+    )
+
+
 @app.post("/board/export")
 def board_export(
     params: BoardParams,
