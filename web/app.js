@@ -47,9 +47,9 @@ class HotelPreview {
         this.scene.add(this.ground);
 
         // Grid helper
-        const grid = new THREE.GridHelper(40, 40, 0x444444, 0x333333);
-        grid.position.y = 0.01;
-        this.scene.add(grid);
+        this.gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x333333);
+        this.gridHelper.position.y = 0.01;
+        this.scene.add(this.gridHelper);
 
         // Material for hotel models
         this.hotelMaterial = new THREE.MeshStandardMaterial({
@@ -206,6 +206,39 @@ class HotelPreview {
         this.camera.far = distance * 10;
         this.camera.updateProjectionMatrix();
         this.controls.update();
+
+        // Resize ground plane and grid to fit model
+        const groundSize = Math.max(size.x, size.z) * 2.5;
+        this.ground.geometry.dispose();
+        this.ground.geometry = new THREE.PlaneGeometry(groundSize, groundSize);
+
+        if (this.gridHelper) this.scene.remove(this.gridHelper);
+        const gridDivisions = Math.min(Math.round(groundSize / 2), 100);
+        this.gridHelper = new THREE.GridHelper(groundSize * 0.8, gridDivisions, 0x444444, 0x333333);
+        this.gridHelper.position.y = 0.01;
+        this.scene.add(this.gridHelper);
+
+        // Update shadow camera to cover model
+        const shadowExtent = Math.max(size.x, size.z) * 0.8;
+        const keyLight = this.scene.children.find(
+            c => c.isDirectionalLight && c.castShadow
+        );
+        if (keyLight) {
+            keyLight.shadow.camera.left = -shadowExtent;
+            keyLight.shadow.camera.right = shadowExtent;
+            keyLight.shadow.camera.top = shadowExtent;
+            keyLight.shadow.camera.bottom = -shadowExtent;
+            keyLight.shadow.camera.far = distance * 3;
+            keyLight.shadow.camera.updateProjectionMatrix();
+            // Reposition key light relative to model center
+            keyLight.position.set(
+                center.x + distance * 0.5,
+                center.y + distance * 0.8,
+                center.z + distance * 0.3
+            );
+            keyLight.target.position.copy(center);
+            keyLight.target.updateMatrixWorld();
+        }
     }
 
     resetView() {
@@ -302,6 +335,7 @@ class App {
         this.styleSelect = document.getElementById('style-select');
         this.printerSelect = document.getElementById('printer-select');
         this.presetSelect = document.getElementById('preset-select');
+        this.roadShapeSelect = document.getElementById('road-shape-select');
         this.loadingOverlay = document.getElementById('loading-overlay');
         this.errorToast = document.getElementById('error-toast');
         this.buildInfo = document.getElementById('build-info');
@@ -317,7 +351,7 @@ class App {
         this.lastParamsHash = '';
         this.styles = [];
         this.presets = [];
-        this.mode = 'single'; // 'single' | 'complex'
+        this.mode = 'single'; // 'single' | 'complex' | 'board'
 
         this.init();
     }
@@ -351,6 +385,7 @@ class App {
         this.styleSelect.addEventListener('change', () => this.onStyleChange());
         this.printerSelect.addEventListener('change', () => this.debouncedGenerate());
         this.presetSelect.addEventListener('change', () => this.onPresetChange());
+        this.roadShapeSelect.addEventListener('change', () => this.debouncedGenerate());
 
         // Sliders
         for (const id of ['seed', 'width', 'depth', 'floors', 'floor-height', 'buildings', 'spacing']) {
@@ -392,6 +427,33 @@ class App {
         complexEls.forEach(el => {
             el.style.display = this.mode === 'complex' ? '' : 'none';
         });
+        const boardEls = document.querySelectorAll('.board-only');
+        boardEls.forEach(el => {
+            el.style.display = this.mode === 'board' ? '' : 'none';
+        });
+        // Hide single/complex-specific controls in board mode
+        const buildingControls = document.querySelectorAll(
+            '#style-params-container, [for="style-select"]'
+        );
+        const singleComplexSections = [
+            'style-select', 'width-slider', 'depth-slider',
+            'floors-slider', 'floor-height-slider',
+        ];
+        for (const id of singleComplexSections) {
+            const el = document.getElementById(id);
+            if (el) {
+                const section = el.closest('.sidebar-section');
+                if (section && !section.classList.contains('board-only') &&
+                    !section.classList.contains('complex-only')) {
+                    section.style.display = this.mode === 'board' ? 'none' : '';
+                }
+            }
+        }
+        // Style params container
+        const styleParamsContainer = document.getElementById('style-params-container');
+        if (styleParamsContainer) {
+            styleParamsContainer.style.display = this.mode === 'board' ? 'none' : '';
+        }
     }
 
     async loadPresets() {
@@ -463,16 +525,35 @@ class App {
         };
     }
 
+    getBoardParams() {
+        return {
+            road_shape: this.roadShapeSelect.value,
+            printer_type: this.printerSelect.value,
+            seed: Number(document.getElementById('seed-slider').value),
+        };
+    }
+
     debouncedGenerate() {
         clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => this.generate(), 300);
+        const delay = this.mode === 'board' ? 1000 : 300;
+        this.debounceTimer = setTimeout(() => this.generate(), delay);
     }
 
     async generate() {
-        const isComplex = this.mode === 'complex';
-        const params = isComplex ? this.getComplexParams() : this.getParams();
-        const endpoint = isComplex ? '/complex/generate' : '/generate';
-        const metadataHeader = isComplex ? 'X-Complex-Metadata' : 'X-Build-Metadata';
+        let params, endpoint, metadataHeader;
+        if (this.mode === 'board') {
+            params = this.getBoardParams();
+            endpoint = '/board/preview';
+            metadataHeader = 'X-Board-Metadata';
+        } else if (this.mode === 'complex') {
+            params = this.getComplexParams();
+            endpoint = '/complex/generate';
+            metadataHeader = 'X-Complex-Metadata';
+        } else {
+            params = this.getParams();
+            endpoint = '/generate';
+            metadataHeader = 'X-Build-Metadata';
+        }
 
         const hash = JSON.stringify({ mode: this.mode, ...params });
         if (hash === this.lastParamsHash) return;
@@ -513,7 +594,7 @@ class App {
             const metadata = res.headers.get(metadataHeader);
             if (metadata) {
                 const info = JSON.parse(metadata);
-                this.showBuildInfo(info, isComplex);
+                this.showBuildInfo(info, this.mode);
             }
         } catch (e) {
             if (e.name === 'AbortError') return;
@@ -528,10 +609,23 @@ class App {
     async downloadSTL() {
         const btn = document.getElementById('btn-download');
         btn.disabled = true;
-        btn.textContent = 'Generating...';
+        btn.textContent = 'Exporting...';
 
         try {
-            if (this.mode === 'complex') {
+            if (this.mode === 'board') {
+                const params = this.getBoardParams();
+                const res = await fetch('/board/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params),
+                });
+
+                if (!res.ok) throw new Error('Board export failed');
+
+                const data = await res.json();
+                const fileCount = data.files.filter(f => f.endsWith('.stl')).length;
+                this.showError(`Exported ${fileCount} STL files (${data.num_properties} properties + frame) to server directory`);
+            } else if (this.mode === 'complex') {
                 const params = this.getComplexParams();
                 const res = await fetch('/complex/export', {
                     method: 'POST',
@@ -584,11 +678,19 @@ class App {
         this.errorToast.style.display = 'none';
     }
 
-    showBuildInfo(info, isComplex = false) {
+    showBuildInfo(info, mode = 'single') {
         this.buildInfo.style.display = 'block';
         const infoBuildings = document.getElementById('info-buildings');
 
-        if (isComplex) {
+        if (mode === 'board') {
+            document.getElementById('info-triangles').textContent =
+                `Properties: ${info.num_properties} | Frame: ${info.num_frame_pieces || 0} pcs`;
+            document.getElementById('info-size').textContent =
+                `Layout: ${info.road_shape} | ${(info.generation_time_ms / 1000).toFixed(1)}s`;
+            infoBuildings.style.display = '';
+            const presetNames = (info.property_slots || []).map(s => s.preset).join(', ');
+            infoBuildings.textContent = presetNames || 'No presets';
+        } else if (mode === 'complex') {
             const totalTris = info.buildings
                 ? info.buildings.reduce((sum, b) => sum + b.triangle_count, 0)
                 : 0;
