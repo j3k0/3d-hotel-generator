@@ -66,19 +66,23 @@ def _loop_layout(
     prop_d: float,
     road_w: float,
 ) -> list[PropertySlot]:
-    """Properties around a rectangular loop road.
+    """Properties on both sides of a rectangular loop road (boulevard style).
 
-    Layout (for 8 properties):
-        [P3]  [P4]  [P5]
-         ═══════════════
-    [P2]║               ║[P6]
-         ═══════════════
-        [P1]  [P0]  [P7]
+    Layout (for 8 properties, 2 per quadrant):
+           [P6] [P7]          ← outer top, road_edge=south
+            ═════════          ← top road
+           [P5] [P4]          ← inner top, road_edge=north
+                               ← center gap
+           [P2] [P3]          ← inner bottom, road_edge=south
+            ═════════          ← bottom road
+           [P0] [P1]          ← outer bottom, road_edge=north
 
-    Properties face inward (toward the road loop).
+    Left and right road segments connect the top and bottom roads
+    to form a loop. Properties face inward toward the road on
+    both the outer and inner sides.
     """
     slots: list[PropertySlot] = []
-    gap = road_w + 2.0  # spacing between rows of properties
+    gap = road_w + 2.0  # spacing between facing property edges
 
     if num_properties <= 2:
         # Just two properties facing each other
@@ -93,44 +97,62 @@ def _loop_layout(
             ))
         return slots
 
-    # Distribute around 4 sides of a rectangle
-    # Bottom, left, top, right
-    per_side = _distribute_sides(num_properties)
-    bottom, left, top, right = per_side
+    # Split into outer and inner rings
+    outer_count = (num_properties + 1) // 2
+    inner_count = num_properties - outer_count
 
-    # Rectangle dimensions (inner road loop)
-    inner_w = max(bottom, top) * (prop_w + 2.0)
-    inner_h = max(left, right) * (prop_w + 2.0)
+    # Distribute outer across bottom and top
+    outer_bottom = (outer_count + 1) // 2
+    outer_top = outer_count - outer_bottom
+
+    # Distribute inner across bottom and top
+    inner_bottom = (inner_count + 1) // 2
+    inner_top = inner_count - inner_bottom
+
+    # Compute columns count (max properties in any row)
+    cols = max(outer_bottom, outer_top, inner_bottom, inner_top, 1)
+    row_width = cols * (prop_w + 2.0)
+
+    # Vertical positions (centered at y=0):
+    # From bottom to top:
+    #   outer_bottom: road_edge="north" (faces up toward bottom road)
+    #   --- bottom road gap ---
+    #   inner_bottom: road_edge="south" (faces down toward bottom road)
+    #   --- center gap between inner rows ---
+    #   inner_top:    road_edge="north" (faces up toward top road)
+    #   --- top road gap ---
+    #   outer_top:    road_edge="south" (faces down toward top road)
+
+    center_gap = gap  # gap between inner bottom and inner top rows
+    total_height = 4 * prop_d + 2 * gap + center_gap
+
+    # Y-coordinates of row centers (from bottom to top)
+    y_outer_bottom = -total_height / 2 + prop_d / 2
+    y_inner_bottom = y_outer_bottom + prop_d + gap
+    y_inner_top = y_inner_bottom + prop_d + center_gap
+    y_outer_top = y_inner_top + prop_d + gap
 
     idx = 0
 
-    # Bottom row (road_edge = "north", facing up)
-    for j in range(bottom):
-        x = -inner_w / 2 + (j + 0.5) * (inner_w / max(bottom, 1))
-        y = -(inner_h / 2 + gap / 2 + prop_d / 2)
-        slots.append(PropertySlot(idx, x, y, "north", ""))
-        idx += 1
+    # Row helper: place properties evenly across a row
+    def _place_row(count, y, road_edge):
+        nonlocal idx
+        for j in range(count):
+            x = -row_width / 2 + (j + 0.5) * (row_width / max(count, 1))
+            slots.append(PropertySlot(idx, x, y, road_edge, ""))
+            idx += 1
 
-    # Left column (road_edge = "east", facing right)
-    for j in range(left):
-        x = -(inner_w / 2 + gap / 2 + prop_d / 2)
-        y = -inner_h / 2 + (j + 0.5) * (inner_h / max(left, 1))
-        slots.append(PropertySlot(idx, x, y, "east", ""))
-        idx += 1
+    # Outer bottom (face north → road above)
+    _place_row(outer_bottom, y_outer_bottom, "north")
 
-    # Top row (road_edge = "south", facing down)
-    for j in range(top):
-        x = -inner_w / 2 + (j + 0.5) * (inner_w / max(top, 1))
-        y = inner_h / 2 + gap / 2 + prop_d / 2
-        slots.append(PropertySlot(idx, x, y, "south", ""))
-        idx += 1
+    # Inner bottom (face south → road below)
+    _place_row(inner_bottom, y_inner_bottom, "south")
 
-    # Right column (road_edge = "west", facing left)
-    for j in range(right):
-        x = inner_w / 2 + gap / 2 + prop_d / 2
-        y = -inner_h / 2 + (j + 0.5) * (inner_h / max(right, 1))
-        slots.append(PropertySlot(idx, x, y, "west", ""))
-        idx += 1
+    # Inner top (face north → road above)
+    _place_row(inner_top, y_inner_top, "north")
+
+    # Outer top (face south → road below)
+    _place_row(outer_top, y_outer_top, "south")
 
     return slots
 

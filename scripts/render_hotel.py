@@ -473,10 +473,40 @@ def generate_board_output(
         f.unlink()
     tmp_dir.rmdir()
 
-    all_files = stl_files + ["board_preview.png"]
+    # Render assembled board (all properties + frame in position)
+    print("Rendering assembled board preview...")
+    from hotel_generator.geometry.booleans import compose_disjoint
+    from hotel_generator.geometry.transforms import translate as geo_translate
+
+    assembled_parts = []
+    for prop, slot in zip(result.properties, result.property_slots):
+        placed = geo_translate(prop.plate, x=slot.center_x, y=slot.center_y)
+        assembled_parts.append(placed)
+
+    if result.frame:
+        for piece in result.frame.all_pieces:
+            assembled_parts.append(piece.manifold)
+
+    if assembled_parts:
+        assembled = compose_disjoint(assembled_parts)
+        assembled_paths = render_manifold_to_images(
+            assembled,
+            output_dir=str(out_path),
+            style_name="board_assembled",
+            resolution=resolution,
+            angles=[(45, 30, "assembled"), (0, 80, "assembled_top")],
+            supersample=supersample,
+        )
+        all_assembled = [Path(p).name for p in assembled_paths]
+    else:
+        all_assembled = []
+
+    all_files = stl_files + ["board_preview.png"] + all_assembled
     print(f"\nFull board output in {output_dir}/:")
     print(f"  {len(stl_files)} STL/manifest files")
-    print(f"  1 board preview PNG")
+    print(f"  1 board preview PNG (grid)")
+    if all_assembled:
+        print(f"  {len(all_assembled)} assembled board renders")
     return all_files
 
 

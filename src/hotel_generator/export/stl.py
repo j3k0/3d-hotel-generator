@@ -133,10 +133,47 @@ def export_board_to_directory(
         files = export_property_to_directory(prop, out / prop_dir)
         all_created.extend(f"{prop_dir}/{f}" for f in files)
 
+    # Export frame pieces (if present)
+    if result.frame and result.frame.all_pieces:
+        frame_dir = out / "frame"
+        frame_dir.mkdir(parents=True, exist_ok=True)
+        frame_files: list[str] = []
+        for piece in result.frame.all_pieces:
+            filename = f"{piece.label}.stl"
+            stl_bytes = export_stl_bytes(piece.manifold)
+            (frame_dir / filename).write_bytes(stl_bytes)
+            frame_files.append(filename)
+            all_created.append(f"frame/{filename}")
+
+        frame_manifest = {
+            "num_pieces": len(result.frame.all_pieces),
+            "road_fillers": len(result.frame.road_fillers),
+            "road_sides": len(result.frame.road_sides),
+            "road_corners": len(result.frame.road_corners),
+            "frame_rails": len(result.frame.frame_rails),
+            "files": frame_files,
+            "pieces": [
+                {
+                    "label": p.label,
+                    "type": p.piece_type,
+                    "x": p.x,
+                    "y": p.y,
+                    "rotation": p.rotation,
+                }
+                for p in result.frame.all_pieces
+            ],
+        }
+        frame_manifest_path = "frame/frame_manifest.json"
+        (frame_dir / "frame_manifest.json").write_text(
+            json.dumps(frame_manifest, indent=2)
+        )
+        all_created.append(frame_manifest_path)
+
     # Board-level manifest
     board_manifest = {
         "num_properties": len(result.properties),
         "road_shape": result.road_shape,
+        "has_frame": result.frame is not None and len(result.frame.all_pieces) > 0,
         "property_slots": [
             {
                 "index": s.index,

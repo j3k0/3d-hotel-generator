@@ -87,6 +87,15 @@ DEFAULT_PRESET_ASSIGNMENTS = [
 ]
 
 
+class FrameParams(BaseModel):
+    """Configuration for board frame and road connector pieces."""
+
+    frame_width: float = 5.0  # Outer rail width (mm)
+    lip_height: float = 1.5  # Retaining lip above Z=0 (mm)
+    lip_thickness: float = 1.0  # Lip wall thickness (mm)
+    enabled: bool = True  # Generate frame pieces?
+
+
 class BoardParams(BaseModel):
     """Parameters for generating a full game board (all property plates)."""
 
@@ -100,6 +109,7 @@ class BoardParams(BaseModel):
     max_triangles_per_property: int = 300_000
     # index → preset name, auto-assigned from DEFAULT_PRESET_ASSIGNMENTS if None
     style_assignments: dict[int, str] | None = None
+    frame: FrameParams = FrameParams()
 
     @model_validator(mode="after")
     def check_road_shape(self):

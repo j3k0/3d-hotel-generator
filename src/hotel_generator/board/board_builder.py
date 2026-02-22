@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from hotel_generator.board.config import BoardParams, PropertyParams, PropertySlot
+from hotel_generator.board.frame import FrameResult, generate_frame
 from hotel_generator.board.property_builder import PropertyBuilder, PropertyResult
 from hotel_generator.board.road import generate_road_layout
 from hotel_generator.settings import Settings
@@ -20,6 +21,7 @@ class BoardResult:
     properties: list[PropertyResult]
     property_slots: list[PropertySlot]
     road_shape: str
+    frame: FrameResult | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -68,15 +70,20 @@ class BoardBuilder:
             result = self.property_builder.build(prop_params)
             properties.append(result)
 
+        # 3. Generate frame and road connectors
+        frame_result = generate_frame(slots, params)
+
         elapsed = time.time() - start_time
 
         return BoardResult(
             properties=properties,
             property_slots=slots,
             road_shape=params.road_shape,
+            frame=frame_result,
             metadata={
                 "num_properties": len(properties),
                 "road_shape": params.road_shape,
+                "num_frame_pieces": len(frame_result.all_pieces),
                 "generation_time_ms": round(elapsed * 1000),
                 "seed": params.seed,
             },
