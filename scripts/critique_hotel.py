@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 # Must be set before any OpenGL import
-if "PYOPENGL_PLATFORM" not in os.environ:
+if "PYOPENGL_PLATFORM" not in os.environ and sys.platform != "darwin":
     os.environ["PYOPENGL_PLATFORM"] = "osmesa"
 
 
