@@ -24,7 +24,9 @@ import sys
 from pathlib import Path
 
 # Must be set before any OpenGL import
-if "PYOPENGL_PLATFORM" not in os.environ:
+# Linux: use osmesa for headless rendering (apt-get install libosmesa6-dev)
+# macOS: leave unset so pyrender uses its pyglet backend (native Cocoa/CGL)
+if "PYOPENGL_PLATFORM" not in os.environ and sys.platform != "darwin":
     os.environ["PYOPENGL_PLATFORM"] = "osmesa"
 
 import numpy as np
@@ -78,6 +80,29 @@ def _post_process(img):
     # Boost contrast to deepen shadows without clipping highlights
     img = ImageEnhance.Contrast(img).enhance(1.10)
     return img
+
+
+def _get_shared_renderer(width: int, height: int) -> "pyrender.OffscreenRenderer":
+    """Get or create a shared OffscreenRenderer (avoids repeated pyglet window creation on macOS)."""
+    import pyrender
+    key = (width, height)
+    if not hasattr(_get_shared_renderer, "_cache"):
+        _get_shared_renderer._cache = {}
+    cache = _get_shared_renderer._cache
+    if key not in cache:
+        cache[key] = pyrender.OffscreenRenderer(width, height)
+    return cache[key]
+
+
+def _cleanup_shared_renderers():
+    """Delete all cached renderers."""
+    if hasattr(_get_shared_renderer, "_cache"):
+        for r in _get_shared_renderer._cache.values():
+            try:
+                r.delete()
+            except Exception:
+                pass
+        _get_shared_renderer._cache.clear()
 
 
 def _render_single_angle(
@@ -169,11 +194,14 @@ def _render_single_angle(
     rim_light = pyrender.DirectionalLight(color=[0.90, 0.85, 0.80], intensity=1.0)
     scene.add(rim_light, pose=_make_directional_light_pose([0.0, -0.5, -0.8]))
 
-    # Render at supersampled resolution
-    renderer = pyrender.OffscreenRenderer(render_w, render_h)
-    flags = pyrender.RenderFlags.SHADOWS_DIRECTIONAL if add_ground else pyrender.RenderFlags.NONE
+    # Render at supersampled resolution (reuse renderer to avoid pyglet window churn on macOS)
+    renderer = _get_shared_renderer(render_w, render_h)
+    # Shadow maps crash on macOS (PyOpenGL + Python 3.13 ctypes incompatibility)
+    if add_ground and sys.platform != "darwin":
+        flags = pyrender.RenderFlags.SHADOWS_DIRECTIONAL
+    else:
+        flags = pyrender.RenderFlags.NONE
     color, _ = renderer.render(scene, flags=flags)
-    renderer.delete()
 
     # Convert to PIL and downsample
     img = Image.fromarray(color)
@@ -632,4 +660,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        _cleanup_shared_renderers()
