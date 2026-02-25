@@ -11,3 +11,6 @@ renders/_board_preview_tmp/
 # Allow STLs and renders committed to renders/ but ignore elsewhere
 web/*.stl
 web/*.glb
+.server.pid
+.server.port
+server.log
